@@ -9,6 +9,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import retrofit2.Retrofit
+import javax.inject.Named
 import javax.inject.Singleton
 
 
@@ -18,7 +19,14 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideRetrofit(preferencesManager: PreferencesManager): Retrofit {
+    fun provideRetrofit(): Retrofit {
+        return RetrofitClient.getClient(null)
+    }
+
+    @Provides
+    @Singleton
+    @Named("authenticated")
+    fun provideAuthenticatedRetrofit(preferencesManager: PreferencesManager): Retrofit {
         val token = preferencesManager.getToken()
         return RetrofitClient.getClient(token)
     }
@@ -30,7 +38,7 @@ object NetworkModule {
     }
     @Provides
     @Singleton
-    fun provideStoreApi(retrofit: Retrofit): StoreApi {
+    fun provideStoreApi(@Named("authenticated") retrofit: Retrofit): StoreApi {
         return retrofit.create(StoreApi::class.java)
     }
 
