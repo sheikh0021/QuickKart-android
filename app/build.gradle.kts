@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.application.quickkartcustomer"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.application.quickkartcustomer"
@@ -59,6 +59,8 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    //coil
+    implementation("io.coil-kt:coil-compose:2.2.2")
 
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("com.google.android.material:material:1.13.0")
@@ -100,8 +102,8 @@ dependencies {
     kapt("com.google.dagger:hilt-android-compiler:2.57.1")
 
     // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
-    implementation ("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-messaging-ktx:23.4.1")
+
 
     // Room Database
     implementation ("androidx.room:room-runtime:2.4.2")

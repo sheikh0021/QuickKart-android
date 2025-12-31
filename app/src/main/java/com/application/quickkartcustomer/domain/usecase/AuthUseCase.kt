@@ -24,7 +24,7 @@ class AuthUseCase(private val authRepository: AuthRepository) {
             password = password,
             firstName = firstName,
             lastName = lastName,
-            phoneNumber = phoneNumber,
+            phone_number = phoneNumber,
             userType = "customer"
         )
         return authRepository.register(request)

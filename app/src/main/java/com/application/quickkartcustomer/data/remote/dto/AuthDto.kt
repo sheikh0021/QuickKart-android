@@ -11,7 +11,7 @@ data class RegisterRequest(
     val password: String,
     val firstName: String,
     val lastName: String,
-    val phoneNumber: String,
+    val phone_number: String,
     val userType: String = "customer"
 )
 
