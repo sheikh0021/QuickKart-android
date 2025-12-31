@@ -2,8 +2,12 @@ package com.application.quickkartcustomer.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavGraph
-import androidx.navigation.NavHost
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import com.application.quickkartcustomer.presentation.auth.login.LoginScreen
+import com.application.quickkartcustomer.presentation.auth.register.RegisterScreen
+import com.application.quickkartcustomer.presentation.home.HomeScreen
 
 
 sealed class Screen(val route: String) {
@@ -37,5 +41,15 @@ fun NavGraph(navController: NavHostController){
         composable(Screen.Login.route){
             LoginScreen(navController)
         }
+        composable(Screen.Register.route) {
+            RegisterScreen(navController)
+        }
+        composable(Screen.Home.route){
+            HomeScreen(navController)
+        }
+//        composable(Screen.ProductList.route){ backStackEntry ->
+//            val storeId = backStackEntry.arguments?.getString("storeId")?.toIntOrNull() ?: 0
+//            ProductListScreen(navController, storeId)
+//        }
     }
 }

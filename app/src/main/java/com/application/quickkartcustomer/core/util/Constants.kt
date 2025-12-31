@@ -2,7 +2,7 @@ package com.application.quickkartcustomer.core.util
 
 
 object Constants {
-    const val BASE_URL = "http://10.0.2.2:8000/api" //for android emulator
+    const val BASE_URL = "http://10.0.2.2:8000/api/" //for android emulator
     // const val BASE_URL = "http://192.168.1.100:8000/api/" //replace when using with physical devices
 
     const val PREFS_TOKEN = "prefs_token"
