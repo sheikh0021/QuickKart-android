@@ -1,7 +1,7 @@
 package com.application.quickkartcustomer.core.network
 
 import com.application.quickkartcustomer.core.util.Constants
-import okhttp3.Interceptor  // ✅ CORRECT - This is OkHttp's interceptorimport com.application.quickkartcustomer.core.util.Constants
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
