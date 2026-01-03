@@ -15,3 +15,17 @@ data class Store(
     val deliveryFee: Double
 )
 
+data class Banner(
+    val id: Int,
+    val image: String,
+    val title: String,
+    val description: String
+)
+
+data class HomeData(
+    val stores: List<Store>,
+    val categories: List<Category>,
+    val banners: List<Banner>
+
+)
+

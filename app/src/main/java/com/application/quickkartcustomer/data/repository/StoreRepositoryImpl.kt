@@ -2,6 +2,9 @@ package com.application.quickkartcustomer.data.repository
 
 import com.application.quickkartcustomer.data.mapper.StoreMapper
 import com.application.quickkartcustomer.data.remote.api.StoreApi
+import com.application.quickkartcustomer.domain.model.Banner
+import com.application.quickkartcustomer.domain.model.Category
+import com.application.quickkartcustomer.domain.model.HomeData
 import com.application.quickkartcustomer.domain.model.Store
 import com.application.quickkartcustomer.domain.repository.StoreRepository
 
@@ -35,6 +38,25 @@ class StoreRepositoryImpl(
                 Result.failure(Exception("Failed to fetch store details: ${response.message()}"))
             }
         }catch (e: Exception){
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getHomeData(): Result<HomeData> {
+        return try {
+            val response = storeApi.getHomeData()
+            if (response.isSuccessful) {
+                response.body()?.let { dto ->
+                    val stores = dto.stores.map { storeMapper.mapToDomain(it) }
+                    val categories = emptyList<Category>()
+                    val banners = dto.banners.map { Banner(it.id, it.image, it.title, it.description) }
+
+                    Result.success(HomeData(stores, categories, banners))
+                } ?: Result.failure(Exception("Empty response"))
+            } else {
+                Result.failure(Exception("Failed to load home data: ${response.message()}"))
+            }
+        } catch (e: Exception) {
             Result.failure(e)
         }
     }

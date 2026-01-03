@@ -40,4 +40,8 @@ class PreferencesManager(context: Context) {
     fun isLoggedIn(): Boolean {
         return getToken() != null
     }
+    fun isTokenValid(): Boolean{
+        val token = getToken()
+        return !token.isNullOrEmpty() && token.length >10
+    }
  }

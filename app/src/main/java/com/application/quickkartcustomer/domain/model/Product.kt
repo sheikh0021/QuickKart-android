@@ -23,3 +23,11 @@ data class Product(
     val categoryName: String,
     val storeName: String
 )
+
+data class ProductListResponse(
+    val products: List<Product>,
+    val totalPages: Int,
+    val currentPage: Int,
+    val hasNext: Boolean,
+    val hasPrevious: Boolean
+)

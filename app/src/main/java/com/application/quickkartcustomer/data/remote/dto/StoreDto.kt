@@ -16,3 +16,10 @@ data class StoreDto(
     val minimum_order: Double,
     val delivery_fee: Double
 )
+
+
+data class HomeResponseDto(
+    val stores: List<StoreDto>,
+    val categories : List<CategoryDto>,
+    val banners: List<BannerDto>
+)
