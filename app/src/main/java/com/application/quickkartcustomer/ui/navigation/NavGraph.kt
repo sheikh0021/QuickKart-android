@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import com.application.quickkartcustomer.presentation.auth.login.LoginScreen
 import com.application.quickkartcustomer.presentation.auth.register.RegisterScreen
 import com.application.quickkartcustomer.presentation.home.HomeScreen
+import com.application.quickkartcustomer.presentation.product.ProductListScreen
 
 
 sealed class Screen(val route: String) {
@@ -47,9 +48,17 @@ fun NavGraph(navController: NavHostController){
         composable(Screen.Home.route){
             HomeScreen(navController)
         }
-//        composable(Screen.ProductList.route){ backStackEntry ->
-//            val storeId = backStackEntry.arguments?.getString("storeId")?.toIntOrNull() ?: 0
-//            ProductListScreen(navController, storeId)
-//        }
+        composable(Screen.Cart.route) {
+            HomeScreen(navController)
+        }
+        composable(Screen.Profile.route) {
+            HomeScreen(navController)
+        }
+        composable(Screen.ProductList.route){ backStackEntry ->
+            val storeId = backStackEntry.arguments?.getString("storeId")?.toIntOrNull()
+            val categoryId = backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
+
+          ProductListScreen(navController)
+       }
     }
 }
