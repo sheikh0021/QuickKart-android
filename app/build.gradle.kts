@@ -72,14 +72,16 @@ dependencies {
 
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+
     // Networking
     implementation ("com.squareup.retrofit2:retrofit:2.9.0")
     implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation ("com.squareup.okhttp3:logging-interceptor:4.9.3")
 
-    implementation(platform(libs.androidx.compose.bom))
+
     implementation("androidx.compose.runtime:runtime")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
 
     // Dependency Injection
     implementation ("com.google.dagger:dagger:2.40.5")
