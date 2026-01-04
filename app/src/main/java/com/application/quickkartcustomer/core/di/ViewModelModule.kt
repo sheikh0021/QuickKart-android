@@ -6,12 +6,15 @@ import com.application.quickkartcustomer.data.mapper.StoreMapper
 import com.application.quickkartcustomer.data.remote.api.AuthApi
 import com.application.quickkartcustomer.data.remote.api.StoreApi
 import com.application.quickkartcustomer.data.repository.AuthRepositoryImpl
+import com.application.quickkartcustomer.data.repository.CartRepositoryImpl
 import com.application.quickkartcustomer.data.repository.ProductRepositoryImpl
 import com.application.quickkartcustomer.data.repository.StoreRepositoryImpl
 import com.application.quickkartcustomer.domain.repository.AuthRepository
+import com.application.quickkartcustomer.domain.repository.CartRepository
 import com.application.quickkartcustomer.domain.repository.ProductRepository
 import com.application.quickkartcustomer.domain.repository.StoreRepository
 import com.application.quickkartcustomer.domain.usecase.AuthUseCase
+import com.application.quickkartcustomer.domain.usecase.CartUseCase
 import com.application.quickkartcustomer.domain.usecase.ProductUseCase
 import com.application.quickkartcustomer.domain.usecase.StoreUseCase
 import dagger.Module
@@ -27,6 +30,9 @@ object ViewModelModule {
     @Provides
     fun provideProductUseCase(productRepository: ProductRepository): ProductUseCase =
         ProductUseCase(productRepository)
+
+    @Provides
+    fun provideCartRepository(): CartRepository = CartRepositoryImpl()
 
     //mappers these are
     @Provides
@@ -59,6 +65,9 @@ object ViewModelModule {
 
     @Provides
     fun provideStoreUseCase(storeRepository: StoreRepository): StoreUseCase = StoreUseCase(storeRepository)
+
+    @Provides
+    fun providesCartUseCase(cartRepository: CartRepository): CartUseCase = CartUseCase(cartRepository)
 
     @Provides
     fun provideProductRepository(

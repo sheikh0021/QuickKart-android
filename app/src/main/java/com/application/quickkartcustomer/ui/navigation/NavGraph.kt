@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.application.quickkartcustomer.presentation.auth.login.LoginScreen
 import com.application.quickkartcustomer.presentation.auth.register.RegisterScreen
+import com.application.quickkartcustomer.presentation.cart.CartScreen
 import com.application.quickkartcustomer.presentation.home.HomeScreen
 import com.application.quickkartcustomer.presentation.product.ProductListScreen
 
@@ -60,5 +61,8 @@ fun NavGraph(navController: NavHostController){
 
           ProductListScreen(navController)
        }
+        composable(Screen.Cart.route) {
+            CartScreen(navController)
+        }
     }
 }
