@@ -9,11 +9,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,9 +26,10 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.LiveData
+import androidx.compose.runtime.collectAsState
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.application.quickkartcustomer.R
 import com.application.quickkartcustomer.domain.model.Product
 import com.application.quickkartcustomer.ui.components.QuickKartButton
 import com.application.quickkartcustomer.ui.navigation.Screen
@@ -39,20 +40,12 @@ fun ProductListScreen(
     navController: NavController,
     viewModel: ProductListViewModel = hiltViewModel()
 ) {
-    // Temporary workaround - using LaunchedEffect to observe LiveData
-    var products by remember { mutableStateOf(emptyList<Product>()) }
-    var isLoading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var hasNextPage by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
+    val products by viewModel.products.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val hasNextPage by viewModel.hasNextPage.collectAsState()
 
-    // Observe LiveData using LaunchedEffect
-    LaunchedEffect(viewModel) {
-        viewModel.products.observeForever { products = it }
-        viewModel.isLoading.observeForever { isLoading = it }
-        viewModel.error.observeForever { error = it }
-        viewModel.hasNextPage.observeForever { hasNextPage = it }
-    }
+    var searchQuery by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -92,15 +85,15 @@ fun ProductListScreen(
 
             // Products List
             when {
-                isLoading && products.isEmpty() -> {
+                isLoading && products.isNullOrEmpty() -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
                 }
-                error != null && products.isEmpty() -> {
+                error != null && products.isNullOrEmpty() -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = error.toString(), color = Color.Red)
+                            Text(text = error.orEmpty().ifEmpty { "Unknown error" }, color = Color.Red)
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(onClick = { viewModel.loadProducts() }) {
                                 Text("Retry")

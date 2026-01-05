@@ -28,3 +28,45 @@ data class Order(
     val customerName: String,
     val storeName: String
 )
+
+data class Address(
+    val id: Int? = null,
+    val street: String,
+    val city: String,
+    val state: String,
+    val zipCode: String,
+    val isDefault: Boolean = false
+) {
+    val fullAddress: String
+        get() = "$street, $city, $state - $zipCode "
+}
+
+data class OrderRequest(
+    val items: List<OrderItem>,
+    val address: String,
+    val paymentMethod: String = "COD",
+    val notes: String? = null
+)
+
+//add orderstatus enum to work with your existing string status
+
+enum class OrderStatus{
+    PLACED,
+    PACKED,
+    OUT_FOR_DELIVERY,
+    DELIVERED,
+    CANCELLED;
+
+    companion object {
+        fun fromString(status: String): OrderStatus {
+            return when (status.lowercase()){
+                "placed" -> PLACED
+                "packed" -> PACKED
+                "out_for_delivery" -> OUT_FOR_DELIVERY
+                "delivered" -> DELIVERED
+                "cancelled" -> CANCELLED
+                else -> PLACED
+            }
+        }
+    }
+}
