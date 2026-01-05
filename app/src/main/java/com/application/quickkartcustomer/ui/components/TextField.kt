@@ -19,6 +19,7 @@ fun QuickKartTextField(
     modifier: Modifier = Modifier,
     isPassword: Boolean = false,
     keyboardType: KeyboardType = KeyboardType.Text,
+    keyboardOptions: KeyboardOptions? = null,
     isError: Boolean = false,
     errorMessage: String = ""
 ) {
@@ -28,7 +29,7 @@ fun QuickKartTextField(
         label = { Text(label) },
         modifier = modifier.fillMaxWidth(),
         visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        keyboardOptions = keyboardOptions ?: KeyboardOptions(keyboardType = keyboardType),
         isError = isError,
         supportingText = {
             if (isError && errorMessage.isNotEmpty()) {

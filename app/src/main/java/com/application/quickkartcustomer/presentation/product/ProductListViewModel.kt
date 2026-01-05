@@ -1,13 +1,13 @@
 package com.application.quickkartcustomer.presentation.product
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.application.quickkartcustomer.domain.model.Product
 import com.application.quickkartcustomer.domain.usecase.ProductUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -17,23 +17,23 @@ class ProductListViewModel @Inject constructor(
     private val productUseCase: ProductUseCase,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
-    private val _products = MutableLiveData<List<Product>>()
-    val products: LiveData<List<Product>> = _products
+    private val _products = MutableStateFlow<List<Product>>(emptyList())
+    val products: StateFlow<List<Product>> = _products
 
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> = _isLoading
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _error = MutableLiveData<String?>()
-    val error: LiveData<String?> = _error
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
 
-    private val _currentPage = MutableLiveData<Int>()
-    val currentPage: LiveData<Int> = _currentPage
+    private val _currentPage = MutableStateFlow(1)
+    val currentPage: StateFlow<Int> = _currentPage
 
-    private val _hasNextPage = MutableLiveData<Boolean>()
-    val hasNextPage: LiveData<Boolean> = _hasNextPage
+    private val _hasNextPage = MutableStateFlow(false)
+    val hasNextPage: StateFlow<Boolean> = _hasNextPage
 
-    private val _searchQuery = MutableLiveData<String>()
-    val searchQuery: LiveData<String> = _searchQuery
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
 
     private var storeId: Int? = null
     private var categoryId: Int? = null
@@ -70,7 +70,7 @@ class ProductListViewModel @Inject constructor(
                     if (page == 1) {
                         _products.value = response.products
                     } else {
-                        val currentList = _products.value ?: emptyList()
+                        val currentList = _products.value
                         _products.value = currentList + response.products
                     }
                     _currentPage.value = response.currentPage
@@ -91,11 +91,11 @@ class ProductListViewModel @Inject constructor(
     }
 
     fun loadNextPage() {
-        val currentPage = _currentPage.value ?: 1
-        val hasNext = _hasNextPage.value ?: false
+        val currentPage = _currentPage.value
+        val hasNext = _hasNextPage.value
         val searchQuery = _searchQuery.value
 
-        if (hasNext && !_isLoading.value!!) {
+        if (hasNext && !_isLoading.value) {
             loadProducts(currentPage + 1, searchQuery)
         }
     }

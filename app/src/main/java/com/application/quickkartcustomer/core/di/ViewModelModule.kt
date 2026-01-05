@@ -1,20 +1,25 @@
 package com.application.quickkartcustomer.core.di
 
 import com.application.quickkartcustomer.data.mapper.AuthMapper
+import com.application.quickkartcustomer.data.mapper.OrderMapper
 import com.application.quickkartcustomer.data.mapper.ProductMapper
 import com.application.quickkartcustomer.data.mapper.StoreMapper
 import com.application.quickkartcustomer.data.remote.api.AuthApi
+import com.application.quickkartcustomer.data.remote.api.OrderApi
 import com.application.quickkartcustomer.data.remote.api.StoreApi
 import com.application.quickkartcustomer.data.repository.AuthRepositoryImpl
 import com.application.quickkartcustomer.data.repository.CartRepositoryImpl
+import com.application.quickkartcustomer.data.repository.OrderRepositoryImpl
 import com.application.quickkartcustomer.data.repository.ProductRepositoryImpl
 import com.application.quickkartcustomer.data.repository.StoreRepositoryImpl
 import com.application.quickkartcustomer.domain.repository.AuthRepository
 import com.application.quickkartcustomer.domain.repository.CartRepository
+import com.application.quickkartcustomer.domain.repository.OrderRepository
 import com.application.quickkartcustomer.domain.repository.ProductRepository
 import com.application.quickkartcustomer.domain.repository.StoreRepository
 import com.application.quickkartcustomer.domain.usecase.AuthUseCase
 import com.application.quickkartcustomer.domain.usecase.CartUseCase
+import com.application.quickkartcustomer.domain.usecase.OrderUseCase
 import com.application.quickkartcustomer.domain.usecase.ProductUseCase
 import com.application.quickkartcustomer.domain.usecase.StoreUseCase
 import dagger.Module
@@ -43,6 +48,9 @@ object ViewModelModule {
 
     @Provides
     fun provideProductMapper(): ProductMapper = ProductMapper()
+
+    @Provides
+    fun provideOrderMapper(): OrderMapper = OrderMapper()
 
 
     //repository
@@ -74,5 +82,14 @@ object ViewModelModule {
         storeApi: StoreApi,
         productMapper: ProductMapper
     ): ProductRepository = ProductRepositoryImpl(storeApi, productMapper)
+
+    @Provides
+    fun provideOrderRepository(
+        orderApi: OrderApi,
+        orderMapper: OrderMapper
+    ): OrderRepository = OrderRepositoryImpl(orderApi, orderMapper)
+
+    @Provides
+    fun provideOrderUseCase(orderRepository: OrderRepository): OrderUseCase = OrderUseCase(orderRepository)
 
 }
