@@ -27,7 +27,8 @@ class OrderMapper @Inject constructor() {
             paymentStatus = dto.paymentStatus,
             items = dto.items.map { mapOrderItemToDomain(it) },
             customerName = dto.customerName,
-            storeName = dto.storeName
+            storeName = dto.storeName,
+            createdAt = dto.createdAt
         )
     }
 

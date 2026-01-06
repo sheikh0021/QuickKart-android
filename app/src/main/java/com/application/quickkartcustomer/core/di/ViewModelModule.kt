@@ -3,24 +3,29 @@ package com.application.quickkartcustomer.core.di
 import com.application.quickkartcustomer.data.mapper.AuthMapper
 import com.application.quickkartcustomer.data.mapper.OrderMapper
 import com.application.quickkartcustomer.data.mapper.ProductMapper
+import com.application.quickkartcustomer.data.mapper.ProfileMapper
 import com.application.quickkartcustomer.data.mapper.StoreMapper
 import com.application.quickkartcustomer.data.remote.api.AuthApi
 import com.application.quickkartcustomer.data.remote.api.OrderApi
+import com.application.quickkartcustomer.data.remote.api.ProfileApi
 import com.application.quickkartcustomer.data.remote.api.StoreApi
 import com.application.quickkartcustomer.data.repository.AuthRepositoryImpl
 import com.application.quickkartcustomer.data.repository.CartRepositoryImpl
 import com.application.quickkartcustomer.data.repository.OrderRepositoryImpl
 import com.application.quickkartcustomer.data.repository.ProductRepositoryImpl
+import com.application.quickkartcustomer.data.repository.ProfileRepositoryImpl
 import com.application.quickkartcustomer.data.repository.StoreRepositoryImpl
 import com.application.quickkartcustomer.domain.repository.AuthRepository
 import com.application.quickkartcustomer.domain.repository.CartRepository
 import com.application.quickkartcustomer.domain.repository.OrderRepository
 import com.application.quickkartcustomer.domain.repository.ProductRepository
+import com.application.quickkartcustomer.domain.repository.ProfileRepository
 import com.application.quickkartcustomer.domain.repository.StoreRepository
 import com.application.quickkartcustomer.domain.usecase.AuthUseCase
 import com.application.quickkartcustomer.domain.usecase.CartUseCase
 import com.application.quickkartcustomer.domain.usecase.OrderUseCase
 import com.application.quickkartcustomer.domain.usecase.ProductUseCase
+import com.application.quickkartcustomer.domain.usecase.ProfileUseCase
 import com.application.quickkartcustomer.domain.usecase.StoreUseCase
 import dagger.Module
 import dagger.Provides
@@ -51,6 +56,9 @@ object ViewModelModule {
 
     @Provides
     fun provideOrderMapper(): OrderMapper = OrderMapper()
+
+    @Provides
+    fun provideProfileMapper(): ProfileMapper = ProfileMapper()
 
 
     //repository
@@ -91,5 +99,15 @@ object ViewModelModule {
 
     @Provides
     fun provideOrderUseCase(orderRepository: OrderRepository): OrderUseCase = OrderUseCase(orderRepository)
+
+    @Provides
+    fun provideProfileRepository(
+        profileApi: ProfileApi,
+        profileMapper: ProfileMapper
+    ): ProfileRepository = ProfileRepositoryImpl(profileApi, profileMapper)
+
+    @Provides
+    fun provideProfileUseCase(profileRepository: ProfileRepository): ProfileUseCase =
+        ProfileUseCase(profileRepository)
 
 }

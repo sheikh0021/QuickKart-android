@@ -12,10 +12,10 @@ class AuthMapper {
                 id = dto.user.id,
                 username = dto.user.username,
                 email = dto.user.email,
-                firstName = dto.user.first_name,
-                lastName = dto.user.last_name,
-                userType = dto.user.user_type,
-                phoneNumber = dto.user.phone_number
+                firstName = dto.user.firstName,
+                lastName = dto.user.lastName,
+                userType = dto.user.userType,
+                phoneNumber = dto.user.phoneNumber
             ),
             tokens = AuthTokens(
                 access = dto.tokens.access,
