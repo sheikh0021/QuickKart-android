@@ -19,16 +19,16 @@ suspend fun getStoreDetails(@Path("id") storeId: Int) : Response<StoreDto>
 @GET("stores/home/")
 suspend fun getHomeData(): Response<HomeResponseDto>
 
-@GET("stores/{storeId}/products/")
+@GET("products/")
 suspend fun getProductsByStore(
-    @Path("storeId") storeId: Int,
+    @Query("store") storeId: Int,
     @Query("page") page: Int = 1,
     @Query("search") search: String? = null
 ): Response<ProductListResponseDto>
 
-@GET("products/categories/{categoryId}/")
+@GET("products/")
 suspend fun getProductsByCategory(
-    @Path("categoryId") categoryId: Int,
+    @Query("category") categoryId: Int,
     @Query("page") page: Int = 1,
     @Query("search") search: String? = null
 ): Response<ProductListResponseDto>

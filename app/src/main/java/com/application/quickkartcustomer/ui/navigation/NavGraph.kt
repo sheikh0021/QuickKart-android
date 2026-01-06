@@ -58,12 +58,14 @@ fun NavGraph(navController: NavHostController){
         composable(Screen.Profile.route) {
             ProfileScreen(navController)
         }
-        composable(Screen.ProductList.route){ backStackEntry ->
-            val storeId = backStackEntry.arguments?.getString("storeId")?.toIntOrNull()
-            val categoryId = backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
-
-          ProductListScreen(navController)
-       }
+        composable(
+            route = Screen.ProductList.route,
+            arguments = listOf(
+                navArgument("storeId") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            ProductListScreen(navController)
+        }
         composable(Screen.Cart.route) {
             CartScreen(navController)
         }

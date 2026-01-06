@@ -21,6 +21,6 @@ interface ProfileApi {
         @Body request: Map<String, String>
     ): Response<Map<String, String>>
 
-    @POST("api/auth/logout/")
+    @POST("api/users/logout/")
     suspend fun logout(): Response<Map<String, String>>
 }

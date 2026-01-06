@@ -19,9 +19,20 @@ val id: Int,
 )
 
 data class ProductListResponseDto(
-    val products: List<ProductDto>,
-    @SerializedName("total_pages") val totalPages: Int,
-    @SerializedName("current_page") val currentPage: Int,
-    val hasNext: Boolean,
+    @SerializedName("results") val products: List<ProductDto>,
+    val count: Int,
+    val next: String?,
+    val previous: String?,
+) {
+    val totalPages: Int
+        get() = if (count > 0) (count + 19) / 20 else 0
+
+    val currentPage: Int
+        get() = 1
+
+    val hasNext: Boolean
+        get() = next != null
+
     val hasPrevious: Boolean
-)
+        get() = previous != null
+}
