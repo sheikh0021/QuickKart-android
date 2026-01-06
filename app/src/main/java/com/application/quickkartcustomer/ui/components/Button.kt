@@ -19,7 +19,8 @@ fun QuickKartButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isLoading: Boolean = false,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    backgroundColor: Color = Primary
 ) {
     Button(
         onClick = onClick,
@@ -28,7 +29,7 @@ fun QuickKartButton(
             .height(50.dp),
         enabled = enabled && !isLoading,
         colors = ButtonDefaults.buttonColors(
-            containerColor = Primary,
+            containerColor = backgroundColor,
             disabledContainerColor = Color.Gray
         )
     ) {

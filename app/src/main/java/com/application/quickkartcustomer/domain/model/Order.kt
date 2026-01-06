@@ -26,7 +26,8 @@ data class Order(
     val paymentStatus: String,
     val items: List<OrderItem>,
     val customerName: String,
-    val storeName: String
+    val storeName: String,
+    val createdAt: String
 )
 
 data class Address(

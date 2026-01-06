@@ -1,15 +1,21 @@
 package com.application.quickkartcustomer.ui.navigation
 
+import CheckoutScreen
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavGraph
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.application.quickkartcustomer.presentation.auth.login.LoginScreen
 import com.application.quickkartcustomer.presentation.auth.register.RegisterScreen
 import com.application.quickkartcustomer.presentation.cart.CartScreen
 import com.application.quickkartcustomer.presentation.home.HomeScreen
+import com.application.quickkartcustomer.presentation.order.OrderDetailScreen
+import com.application.quickkartcustomer.presentation.order.OrderListScreen
 import com.application.quickkartcustomer.presentation.product.ProductListScreen
+import com.application.quickkartcustomer.presentation.profile.ProfileScreen
 
 
 sealed class Screen(val route: String) {
@@ -49,11 +55,8 @@ fun NavGraph(navController: NavHostController){
         composable(Screen.Home.route){
             HomeScreen(navController)
         }
-        composable(Screen.Cart.route) {
-            HomeScreen(navController)
-        }
         composable(Screen.Profile.route) {
-            HomeScreen(navController)
+            ProfileScreen(navController)
         }
         composable(Screen.ProductList.route){ backStackEntry ->
             val storeId = backStackEntry.arguments?.getString("storeId")?.toIntOrNull()
@@ -63,6 +66,19 @@ fun NavGraph(navController: NavHostController){
        }
         composable(Screen.Cart.route) {
             CartScreen(navController)
+        }
+        composable(Screen.Checkout.route) {
+            CheckoutScreen(navController)
+        }
+        composable(Screen.OrderList.route) {
+            OrderListScreen(navController)
+        }
+        composable(
+            route = Screen.OrderDetail.route,
+            arguments = listOf(navArgument("orderId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getInt("orderId") ?: 0
+            OrderDetailScreen(navController, orderId)
         }
     }
 }
