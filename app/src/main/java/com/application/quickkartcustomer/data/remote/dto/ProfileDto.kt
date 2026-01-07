@@ -20,3 +20,12 @@ data class UpdateProfileDto(
     @SerializedName("phone_number") val phoneNumber: String,
     val email: String
 )
+
+data class ProfileDto(
+    val id: Int,
+    val user: UserDto,
+    val address: String,
+    val latitude: Double?,
+    val longitude: Double?,
+    @SerializedName("preferred_payment") val preferredPayment: String
+)

@@ -1,5 +1,7 @@
 package com.application.quickkartcustomer.data.mapper
 
+
+import com.application.quickkartcustomer.data.remote.dto.ProfileDto
 import com.application.quickkartcustomer.data.remote.dto.UpdateProfileDto
 import com.application.quickkartcustomer.data.remote.dto.UserDto
 import com.application.quickkartcustomer.domain.model.UpdateProfileRequest
@@ -30,6 +32,18 @@ class ProfileMapper @Inject constructor() {
             lastName = dto.lastName,
             phoneNumber = dto.phoneNumber,
             profileImage = dto.profileImage
+        )
+    }
+
+    fun mapProfileDtoToUserProfile(dto: ProfileDto): UserProfile {
+        return UserProfile(
+            id = dto.user.id,
+            username = dto.user.username,
+            email = dto.user.email,
+            firstName = dto.user.firstName,
+            lastName = dto.user.lastName,
+            phoneNumber = dto.user.phoneNumber,
+            profileImage = dto.user.profileImage
         )
     }
 

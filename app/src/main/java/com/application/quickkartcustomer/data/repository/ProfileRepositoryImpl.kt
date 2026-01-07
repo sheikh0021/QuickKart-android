@@ -16,8 +16,7 @@ class ProfileRepositoryImpl @Inject constructor(
         return try {
             val response = profileApi.getProfile()
             if (response.isSuccessful && response.body() != null) {
-                val profile = profileMapper.mapUserDtoToProfile(response.body()!!)
-                Result.success(profile)
+                Result.success(profileMapper.mapProfileDtoToUserProfile(response.body()!!))
             } else {
                 Result.failure(Exception("Failed to load profile: ${response.message()}"))
             }
@@ -31,8 +30,7 @@ class ProfileRepositoryImpl @Inject constructor(
             val dto = profileMapper.mapUpdateRequestToDto(request)
             val response = profileApi.updateProfile(dto)
             if (response.isSuccessful && response.body() != null) {
-                val profile = profileMapper.mapUserDtoToProfile(response.body()!!)
-                Result.success(profile)
+                Result.success(profileMapper.mapProfileDtoToUserProfile(response.body()!!))
             } else {
                 Result.failure(Exception("Failed to update profile: ${response.message()}"))
             }
