@@ -10,7 +10,6 @@ import com.application.quickkartcustomer.data.remote.api.OrderApi
 import com.application.quickkartcustomer.data.remote.api.ProfileApi
 import com.application.quickkartcustomer.data.remote.api.StoreApi
 import com.application.quickkartcustomer.data.repository.AuthRepositoryImpl
-import com.application.quickkartcustomer.data.repository.CartRepositoryImpl
 import com.application.quickkartcustomer.data.repository.OrderRepositoryImpl
 import com.application.quickkartcustomer.data.repository.ProductRepositoryImpl
 import com.application.quickkartcustomer.data.repository.ProfileRepositoryImpl
@@ -40,9 +39,6 @@ object ViewModelModule {
     @Provides
     fun provideProductUseCase(productRepository: ProductRepository): ProductUseCase =
         ProductUseCase(productRepository)
-
-    @Provides
-    fun provideCartRepository(): CartRepository = CartRepositoryImpl()
 
     //mappers these are
     @Provides

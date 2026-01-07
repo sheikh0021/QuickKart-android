@@ -25,7 +25,7 @@ class OrderMapper @Inject constructor() {
             deliveryLongitude = dto.deliveryLongitude,
             paymentMethod = dto.paymentMethod,
             paymentStatus = dto.paymentStatus,
-            items = dto.items.map { mapOrderItemToDomain(it) },
+            items = dto.items?.map { mapOrderItemToDomain(it)} ?: emptyList(),
             customerName = dto.customerName,
             storeName = dto.storeName,
             createdAt = dto.createdAt

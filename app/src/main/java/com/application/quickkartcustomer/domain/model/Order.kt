@@ -44,12 +44,10 @@ data class Address(
 
 data class OrderRequest(
     val items: List<OrderItem>,
-    val address: String,
+    val addressId: Int,
     val paymentMethod: String = "COD",
     val notes: String? = null
 )
-
-//add orderstatus enum to work with your existing string status
 
 enum class OrderStatus{
     PLACED,

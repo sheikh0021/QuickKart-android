@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.application.quickkartcustomer.domain.model.Product
+import com.application.quickkartcustomer.domain.usecase.CartUseCase
 import com.application.quickkartcustomer.domain.usecase.ProductUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +16,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ProductListViewModel @Inject constructor(
     private val productUseCase: ProductUseCase,
+    private val cartUseCase: CartUseCase,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val _products = MutableStateFlow<List<Product>>(emptyList())
@@ -37,6 +39,12 @@ class ProductListViewModel @Inject constructor(
 
     private var storeId: Int? = null
     private var categoryId: Int? = null
+
+    private val _addToCartSuccess = MutableStateFlow<String?>(null)
+    val addToCartSuccess: StateFlow<String?> = _addToCartSuccess
+
+    private val _cartError = MutableStateFlow<String?>(null)
+    val cartError: StateFlow<String?> = _cartError
 
     init {
         //get parameters from navigation arguments
@@ -100,4 +108,22 @@ class ProductListViewModel @Inject constructor(
         }
     }
 
+    fun addToCart(product: Product, quantity: Int = 1) {
+        viewModelScope.launch {
+            cartUseCase.addToCart(product, quantity).fold(
+                onSuccess = {updatedCart ->
+                    _addToCartSuccess.value = "${product.name} added to cart"
+                    kotlinx.coroutines.delay(2000)
+                    _addToCartSuccess.value = null
+                },
+                onFailure = {exception ->
+                    _cartError.value = exception.message ?: "Failed to add to cart"
+                }
+            )
+        }
+    }
+
+    fun clearCartError(){
+        _cartError.value = null
+    }
 }

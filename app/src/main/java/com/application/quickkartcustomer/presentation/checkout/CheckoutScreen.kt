@@ -3,8 +3,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -14,16 +12,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.application.quickkartcustomer.domain.model.Address
 import com.application.quickkartcustomer.domain.model.Cart
+import com.application.quickkartcustomer.domain.model.Order
 import com.application.quickkartcustomer.presentation.checkout.CheckoutViewModel
 import com.application.quickkartcustomer.ui.components.QuickKartButton
 import com.application.quickkartcustomer.ui.components.QuickKartTextField
@@ -45,14 +43,29 @@ fun CheckoutScreen(
     var showAddAddressDialog by remember { mutableStateOf(false) }
     var orderNotes by remember { mutableStateOf("") }
 
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var placedOrder by remember { mutableStateOf<Order?>(null) }
+
     // Handle order placement success
     LaunchedEffect(orderPlaced) {
         orderPlaced?.let { order ->
-            navController.navigate(Screen.OrderDetail.createRoute(order.id)) {
-                popUpTo(Screen.Cart.route) { inclusive = true }
+            placedOrder = order
+            showSuccessDialog = true
             }
         }
+    if (showSuccessDialog && placedOrder != null) {
+        OrderSuccessDialog(
+            orderNumber = placedOrder!!.orderNumber,
+            onDismiss = {
+                showSuccessDialog = false
+                navController.navigate(Screen.OrderDetail.createRoute(placedOrder!!.id)) {
+                    popUpTo(Screen.Cart.route) {inclusive = true}
+                }
+                placedOrder = null
+            }
+        )
     }
+
 
     Scaffold(
         topBar = {
@@ -64,6 +77,16 @@ fun CheckoutScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            if (!cart.isEmpty) {
+                CheckoutBottomBar(
+                    cart =cart,
+                    onPlaceOrderClick = {viewModel.placeOrder(orderNotes.ifBlank { null })},
+                    isLoading = isLoading,
+                    enabled = selectedAddress != null
+                )
+            }
         }
     ) { paddingValues ->
         if (showAddAddressDialog) {
@@ -79,8 +102,7 @@ fun CheckoutScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(bottom = 80.dp), // Space for bottom bar
+                .padding(paddingValues), // Space for bottom bar
             contentPadding = PaddingValues(16.dp)
         ) {
             // Cart Summary
@@ -133,14 +155,6 @@ fun CheckoutScreen(
             }
         }
 
-        // Bottom Bar with Place Order Button
-        if (!cart.isEmpty && selectedAddress != null) {
-            CheckoutBottomBar(
-                cart = cart,
-                onPlaceOrderClick = { viewModel.placeOrder(orderNotes.ifBlank { null }) },
-                isLoading = isLoading
-            )
-        }
     }
 }
 
@@ -344,7 +358,7 @@ fun OrderNotesSection(notes: String, onNotesChange: (String) -> Unit) {
 }
 
 @Composable
-fun CheckoutBottomBar(cart: Cart, onPlaceOrderClick: () -> Unit, isLoading: Boolean) {
+fun CheckoutBottomBar(cart: Cart, onPlaceOrderClick: () -> Unit, isLoading: Boolean, enabled: Boolean = true) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shadowElevation = 8.dp
@@ -365,9 +379,10 @@ fun CheckoutBottomBar(cart: Cart, onPlaceOrderClick: () -> Unit, isLoading: Bool
             Spacer(modifier = Modifier.height(16.dp))
 
             QuickKartButton(
-                text = "Place Order",
+                text = if (enabled)"Place Order" else "Select Address First",
                 onClick = onPlaceOrderClick,
-                isLoading = isLoading
+                isLoading = isLoading,
+                enabled = enabled
             )
         }
     }
@@ -452,4 +467,45 @@ fun AddAddressDialog(
             }
         }
     }
+}
+
+@Composable
+fun OrderSuccessDialog(
+    orderNumber: String,
+    onDismiss: () -> Unit
+){
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Order Placed Successfully",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF4CAF50)
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "Your Order has been placed successfully",
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Text(
+                    text = "Order Number: $orderNumber",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Gray
+                )
+            }
+        },
+        confirmButton = {
+            QuickKartButton(
+                text = "View Order",
+                onClick = onDismiss
+            )
+        },
+         containerColor = Color.White
+
+    )
 }
