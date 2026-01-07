@@ -12,6 +12,13 @@ data class AddressDto(
     @SerializedName("is_default") val isDefault: Boolean = false
 )
 
+data class AddressListResponseDto(
+    @SerializedName("results") val addresses: List<AddressDto>,
+    val count: Int,
+    val next: String?,
+    val previous: String?
+)
+
 data class OrderItemDto(
     val id: Int,
     @SerializedName("order") val orderId: Int,
@@ -51,7 +58,7 @@ data class OrderDto(
     @SerializedName("delivery_longitude") val deliveryLongitude: Double?,
     @SerializedName("payment_method") val paymentMethod: String,
     @SerializedName("payment_status") val paymentStatus: String,
-    val items: List<OrderItemDto>,
+    val items: List<OrderItemDto>? = emptyList(),
     @SerializedName("customer_name") val customerName: String,
     @SerializedName("store_name") val storeName: String,
     @SerializedName("created_at") val createdAt: String,

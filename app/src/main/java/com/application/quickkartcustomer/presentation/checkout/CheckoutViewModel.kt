@@ -108,7 +108,7 @@ class CheckoutViewModel @Inject constructor(
 
             val orderRequest = OrderRequest(
                 items = orderItems,
-                address = selectedAddress.fullAddress,
+                addressId = selectedAddress.id!!,
                 paymentMethod = "COD",
                 notes = notes
             )

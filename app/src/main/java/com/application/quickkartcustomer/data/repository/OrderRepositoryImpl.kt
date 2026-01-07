@@ -20,7 +20,6 @@ class OrderRepositoryImpl @Inject constructor(
 
     override suspend fun createOrder(request: OrderRequest): Result<Order> {
         return try {
-            val addressId = request.address.toIntOrNull() ?: 1
             val dto  = OrderRequestDto(
                 items = request.items.map { item ->
                     OrderItemRequestDto(
@@ -31,7 +30,7 @@ class OrderRepositoryImpl @Inject constructor(
                         total = item.totalPrice
                     )
                 },
-                addressId = addressId,
+                addressId = request.addressId,
                 paymentMethod = request.paymentMethod,
                 notes = request.notes
             )
@@ -83,16 +82,15 @@ class OrderRepositoryImpl @Inject constructor(
     override suspend fun getAddresses(): Result<List<Address>> {
         return try {
             val response = orderApi.getAddresses()
-            if (response.isSuccessful) {
-                response.body()?.let { addressDtos ->
-                    val addresses = addressDtos.map { orderMapper.mapAddressToDomain(it) }
-                    Result.success(addresses)
-                } ?: Result.failure(Exception("Empty response"))
-            } else {
+            if (response.isSuccessful && response.body() != null) {
+                val responseDto = response.body()!!
+                val addresses = responseDto.addresses.map {orderMapper.mapAddressToDomain(it)}
+                Result.success(addresses)
+            }else {
                 Result.failure(Exception("Failed to load addresses: ${response.message()}"))
             }
-        } catch (e: Exception){
-            Result.failure(e)
+        }catch (e: Exception) {
+            Result.failure(Exception("Failed to load addresses: ${e.message}"))
         }
     }
 

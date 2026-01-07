@@ -22,14 +22,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.collectAsState
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import com.application.quickkartcustomer.R
 import com.application.quickkartcustomer.domain.model.Product
 import com.application.quickkartcustomer.ui.components.QuickKartButton
 import com.application.quickkartcustomer.ui.navigation.Screen
@@ -44,9 +44,22 @@ fun ProductListScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val hasNextPage by viewModel.hasNextPage.collectAsState()
-
+    val addToCartSuccess by viewModel.addToCartSuccess.collectAsState()
+    val cartError by viewModel.cartError.collectAsState()
+    val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
 
+    LaunchedEffect(addToCartSuccess) {
+        addToCartSuccess?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+        }
+    }
+    LaunchedEffect(cartError) {
+        cartError?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearCartError()
+        }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -110,7 +123,7 @@ fun ProductListScreen(
                                     // Navigate to product detail (to be implemented)
                                 },
                                 onAddToCartClick = {
-                                    // Add to cart functionality (to be implemented)
+                                    viewModel.addToCart(product)
                                 }
                             )
                         }
