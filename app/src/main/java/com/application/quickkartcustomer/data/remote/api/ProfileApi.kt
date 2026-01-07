@@ -1,5 +1,7 @@
 package com.application.quickkartcustomer.data.remote.api
 
+
+import com.application.quickkartcustomer.data.remote.dto.ProfileDto
 import com.application.quickkartcustomer.data.remote.dto.UpdateProfileDto
 import com.application.quickkartcustomer.data.remote.dto.UserDto
 import retrofit2.Response
@@ -10,17 +12,17 @@ import retrofit2.http.PUT
 
 
 interface ProfileApi {
-    @GET("api/users/profile/")
-    suspend fun getProfile(): Response<UserDto>
+    @GET("users/profile/")
+    suspend fun getProfile(): Response<ProfileDto>
 
-    @PUT("api/users/profile/")
-    suspend fun updateProfile(@Body request: UpdateProfileDto): Response<UserDto>
+    @PUT("users/profile/")
+    suspend fun updateProfile(@Body request: UpdateProfileDto): Response<ProfileDto>
 
-    @POST("api/users/change-password/")
+    @POST("users/change-password/")
     suspend fun changePassword(
         @Body request: Map<String, String>
     ): Response<Map<String, String>>
 
-    @POST("api/users/logout/")
+    @POST("users/logout/")
     suspend fun logout(): Response<Map<String, String>>
 }
