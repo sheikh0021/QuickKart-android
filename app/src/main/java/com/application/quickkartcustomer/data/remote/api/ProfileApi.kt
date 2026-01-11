@@ -25,4 +25,10 @@ interface ProfileApi {
 
     @POST("users/logout/")
     suspend fun logout(): Response<Map<String, String>>
+
+    @POST("users/update-fcm-token/")
+    suspend fun updateFcmToken(@Body request: Map<String, String>): Response<Map<String, String>>
 }
+data class FcmTokenRequest(
+    val fcm_token: String
+)

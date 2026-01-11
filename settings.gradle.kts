@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "QuickKartCustomer"
 include(":app")
+include(":quickKartdeliverypartner")

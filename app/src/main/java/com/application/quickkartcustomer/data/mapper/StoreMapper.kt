@@ -1,5 +1,7 @@
 package com.application.quickkartcustomer.data.mapper
 
+
+import com.application.quickkartcustomer.data.mapper.toCategoryList
 import com.application.quickkartcustomer.data.remote.dto.BannerDto
 import com.application.quickkartcustomer.data.remote.dto.CategoryDto
 import com.application.quickkartcustomer.data.remote.dto.StoreDto

@@ -9,7 +9,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -21,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -31,6 +37,7 @@ import com.application.quickkartcustomer.ui.navigation.Screen
 import com.application.quickkartcustomer.ui.theme.Primary
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     navController: NavController,
@@ -43,6 +50,9 @@ fun RegisterScreen(
     var lastName by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
     var isLoading by  remember { mutableStateOf(false)}
+    var userType by remember { mutableStateOf("customer") }
+    var expanded by remember { mutableStateOf(false) }
+    val userTypes = listOf("customer", "delivery_partner")
 
     val registerState by viewModel.registerState.collectAsState()
 
@@ -89,7 +99,7 @@ fun RegisterScreen(
             value = email,
             onValueChange = {email = it},
             label = "Email",
-            keyboardType = androidx.compose.ui.text.input.KeyboardType.Email
+            keyboardType = KeyboardType.Email
         )
         Spacer(modifier =  Modifier.height(12.dp))
 
@@ -114,9 +124,38 @@ fun RegisterScreen(
             value = phoneNumber,
             onValueChange = {phoneNumber = it},
             label = "Phone Number",
-            keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
+            keyboardType = KeyboardType.Phone
         )
         Spacer(modifier = Modifier.height(12.dp))
+
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = {expanded = it},
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            OutlinedTextField(
+                value = userType,
+                onValueChange = {},
+                readOnly = true,
+                label = {Text("User Type")},
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)},
+                modifier = Modifier.fillMaxWidth().menuAnchor()
+            )
+            ExposedDropdownMenu(
+                expanded= expanded,
+                onDismissRequest = {expanded = false}
+            ) {
+                userTypes.forEach { type ->
+                    DropdownMenuItem(
+                        text = {Text(type.replace("_", "").capitalize())},
+                        onClick = {
+                            userType = type
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
 
         QuickKartTextField(
             value = password,
@@ -129,7 +168,7 @@ fun RegisterScreen(
         QuickKartButton(
             text = "Register",
             onClick = {
-                viewModel.register(username, email, password, firstName, lastName, phoneNumber)
+                viewModel.register(username, email, password, firstName, lastName, phoneNumber, userType)
             },
             isLoading = isLoading,
             enabled = username.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty()

@@ -68,4 +68,18 @@ class ProfileRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun updateFcmToken(token: String): Result<String> {
+        return try {
+            val request = mapOf("fcm_token" to token)
+            val response = profileApi.updateFcmToken(request)
+            if (response.isSuccessful) {
+                Result.success("FCM token updated successfully ")
+            } else {
+                Result.failure(Exception("Failed to updated FCM token: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

@@ -2,6 +2,7 @@ package com.application.quickkartcustomer.ui.navigation
 
 import CheckoutScreen
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavController
 import androidx.navigation.NavGraph
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -81,6 +82,24 @@ fun NavGraph(navController: NavHostController){
         ) { backStackEntry ->
             val orderId = backStackEntry.arguments?.getInt("orderId") ?: 0
             OrderDetailScreen(navController, orderId)
+        }
+    }
+}
+
+@Composable
+fun CustomerNavGraph(navController: NavHostController){
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Login.route
+    ){
+        composable(Screen.Login.route){
+            LoginScreen(navController)
+        }
+        composable(Screen.Register.route) {
+            RegisterScreen(navController)
+        }
+        composable(Screen.Home.route) {
+            HomeScreen(navController)
         }
     }
 }
