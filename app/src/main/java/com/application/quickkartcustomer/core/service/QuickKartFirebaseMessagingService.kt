@@ -5,11 +5,20 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.application.quickkartcustomer.MainActivity
 import com.application.quickkartcustomer.R
+import com.application.quickkartcustomer.core.network.RetrofitClient
+import com.application.quickkartcustomer.core.util.PreferencesManager
+import com.application.quickkartcustomer.data.remote.api.ProfileApi
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import retrofit2.Response
+import retrofit2.create
 
 
 class QuickKartFirebaseMessagingService : FirebaseMessagingService() {
@@ -59,7 +68,29 @@ class QuickKartFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     private fun sendTokenToBackend(token: String){
-        //todo fcm
-    }
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val preferencesManager = PreferencesManager(applicationContext)
+                val authToken = preferencesManager.getToken()
 
+                if (!authToken.isNullOrEmpty()){
+                    val retrofit = RetrofitClient.getAuthenticatedClient(authToken)
+                    val profileApi = retrofit.create(ProfileApi::class.java)
+
+                    val request = mapOf("fcm_token" to token)
+                    val response: Response<Map<String, String>> = profileApi.updateFcmToken(request)
+
+                    if (response.isSuccessful){
+                        Log.d("FCM", "Token sent to backend successfully")
+                    } else {
+                        Log.e("FCM", "Failed to send token to backend: ${response.message()}")
+                    }
+                } else {
+                    Log.w("FCM", "No auth token available, skipping FCM token update")
+                }
+            } catch (e: Exception){
+                Log.e("FCM", "Error sending token to backend: ${e.message}")
+            }
+        }
+    }
 }

@@ -16,7 +16,8 @@ class AuthUseCase(private val authRepository: AuthRepository) {
         password: String,
         firstName: String,
         lastName: String,
-        phoneNumber: String
+        phoneNumber: String,
+        userType: String
     ) : Result<AuthResponse>{
         val request = RegisterRequest(
             username = username,
@@ -25,7 +26,7 @@ class AuthUseCase(private val authRepository: AuthRepository) {
             firstName = firstName,
             lastName = lastName,
             phoneNumber = phoneNumber,
-            userType = "customer"
+            userType = userType
         )
         return authRepository.register(request)
     }

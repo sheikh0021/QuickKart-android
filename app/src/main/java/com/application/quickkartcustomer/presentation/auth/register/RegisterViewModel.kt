@@ -24,19 +24,19 @@ class RegisterViewModel @Inject constructor(
         password: String,
         firstName: String,
         lastName: String,
-        phoneNumber: String
+        phoneNumber: String,
+        userType: String = "customer"
     ){
         viewModelScope.launch {
             _registerState.value = RegisterState.Loading
 
-            authUseCase.register(username, email, password, firstName, lastName, phoneNumber).fold(
-                onSuccess = {authResponse ->
-                    _registerState.value = RegisterState.Success
-                },
-                onFailure = {exception ->
-                    _registerState.value = RegisterState.Error(exception.message ?: "Registration failed")
-                }
-            )
+            try {
+                authUseCase.register(username = username, email = email, password = password, firstName = firstName, lastName = lastName, phoneNumber = phoneNumber, userType = userType)
+                _registerState.value = RegisterState.Success
+            } catch (e: Exception) {
+                _registerState.value = RegisterState.Error(e.message ?: "Registration failed")
+            }
+
         }
     }
 }

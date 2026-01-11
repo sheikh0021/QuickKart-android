@@ -9,4 +9,5 @@ interface ProfileRepository {
     suspend fun updateProfile(request: UpdateProfileRequest): Result<UserProfile>
     suspend fun changePassword(oldPassword: String, newPassword: String): Result<String>
     suspend fun logout(): Result<String>
+    suspend fun updateFcmToken(token: String): Result<String>
 }

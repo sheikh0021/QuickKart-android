@@ -35,6 +35,10 @@ class ProfileUseCase @Inject constructor(
         return profileRepository.changePassword(oldPassword, newPassword)
     }
 
+    suspend fun updateFcmToken(token: String): Result<String> {
+        return profileRepository.updateFcmToken(token)
+    }
+
     suspend fun logout(): Result<String> {
         return profileRepository.logout()
     }

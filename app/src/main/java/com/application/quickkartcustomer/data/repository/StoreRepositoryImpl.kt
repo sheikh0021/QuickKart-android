@@ -1,6 +1,7 @@
 package com.application.quickkartcustomer.data.repository
 
 import com.application.quickkartcustomer.data.mapper.StoreMapper
+import com.application.quickkartcustomer.data.mapper.toCategoryList
 import com.application.quickkartcustomer.data.remote.api.StoreApi
 import com.application.quickkartcustomer.domain.model.Banner
 import com.application.quickkartcustomer.domain.model.Category
@@ -48,7 +49,7 @@ class StoreRepositoryImpl(
             if (response.isSuccessful) {
                 response.body()?.let { dto ->
                     val stores = dto.stores.map { storeMapper.mapToDomain(it) }
-                    val categories = emptyList<Category>()
+                    val categories = dto.categories.toCategoryList()
                     val banners = dto.banners.map { Banner(it.id, it.image, it.title, it.description) }
 
                     Result.success(HomeData(stores, categories, banners))
