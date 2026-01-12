@@ -23,8 +23,13 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.compose.runtime.getValue
 import com.application.quickkartcustomer.ui.components.QuickKartButton
+import com.application.quickkartcustomer.ui.components.QuickKartBottomNavigation
 import com.application.quickkartcustomer.ui.navigation.Screen
+import com.application.quickkartcustomer.ui.navigation.getBottomNavRoute
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,6 +72,37 @@ fun ProfileScreen(
                     containerColor = Color(0xFF4CAF50),
                     titleContentColor = Color.White
                 )
+            )
+        },
+        bottomBar = {
+            // Get current route for bottom navigation highlighting
+            val navHostController = navController as NavHostController
+            val navBackStackEntry by navHostController.currentBackStackEntryAsState()
+            val currentRoute = navBackStackEntry?.destination?.route
+            val bottomNavRoute = getBottomNavRoute(currentRoute)
+            
+            QuickKartBottomNavigation(
+                currentRoute = bottomNavRoute,
+                onItemClick = {route ->
+                    when (route) {
+                        Screen.Home.route -> {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Home.route) { inclusive = false }
+                            }
+                        }
+                        Screen.Categories.route -> {
+                            navController.navigate(Screen.Categories.route) {
+                                popUpTo(Screen.Home.route) { inclusive = false }
+                            }
+                        }
+                        Screen.Profile.route -> {
+                            // Already on profile
+                        }
+                        "more" -> {
+                            // Already on profile (more maps to profile)
+                        }
+                    }
+                }
             )
         }
     ) { paddingValues ->
