@@ -35,7 +35,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.application.quickkartcustomer.ui.navigation.Screen
+import com.application.quickkartcustomer.ui.navigation.getBottomNavRoute
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
@@ -56,19 +59,31 @@ import coil.compose.rememberAsyncImagePainter
 import com.application.quickkartcustomer.core.util.PreferencesManager
 import com.application.quickkartcustomer.domain.model.Banner
 import com.application.quickkartcustomer.domain.model.Category
+import com.application.quickkartcustomer.presentation.cart.CartViewModel
+import com.application.quickkartcustomer.ui.components.DeliveryInfoSection
+import com.application.quickkartcustomer.ui.components.HomeHeader
+import com.application.quickkartcustomer.ui.components.HomeSearchBar
+import com.application.quickkartcustomer.ui.components.QuickKartBottomNavigation
+import com.application.quickkartcustomer.ui.theme.DarkBlue
+import com.application.quickkartcustomer.ui.theme.OrangeAccent
+import com.application.quickkartcustomer.ui.theme.Beige
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     navController: NavController,
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = hiltViewModel(),
+    cartViewModel: CartViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context)}
+    val user = preferencesManager.getUser()
     val homeData by viewModel.homeData.collectAsState()
     val error by viewModel.error.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val cart by cartViewModel.cart.collectAsState()
+    val cartItemCount = cart.totalItems
 
     LaunchedEffect(Unit) {
         if (!preferencesManager.isLoggedIn()){
@@ -78,22 +93,53 @@ fun HomeScreen(
         }
     }
 
+    val userName = user?.firstName?.takeIf { it.isNotEmpty() }
+        ?: user?.username?.takeIf { it.isNotEmpty() }
+        ?: "User"
+
+    val deliveryAddress = user?.let { "${it.firstName} ${it.lastName}" }
+        ?: "Green Way 3000, Sydney"
+
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("QuickKart", fontSize = 20.sp, fontWeight = FontWeight.Bold) },
-                actions = {
-                    IconButton(onClick = {navController.navigate(Screen.Profile.route)}) {
-                        Icon(Icons.Default.Person, contentDescription = "Profile")
-                    }
-                    IconButton(onClick = {navController.navigate(Screen.Cart.route)}) {
-                        Icon(Icons.Default.ShoppingCart, contentDescription = "Cart")
+        bottomBar = {
+            // Get current route for bottom navigation highlighting
+            val navHostController = navController as NavHostController
+            val navBackStackEntry by navHostController.currentBackStackEntryAsState()
+            val currentRoute = navBackStackEntry?.destination?.route
+            val bottomNavRoute = getBottomNavRoute(currentRoute)
+            
+            QuickKartBottomNavigation(
+                currentRoute = bottomNavRoute,
+                onItemClick = {route ->
+                    when (route) {
+                        Screen.Home.route -> {
+                            if (currentRoute != Screen.Home.route) {
+                                navController.navigate(Screen.Home.route) {
+                                    popUpTo(Screen.Home.route) { inclusive = false }
+                                }
+                            }
+                        }
+                        Screen.Categories.route -> {
+                            navController.navigate(Screen.Categories.route) {
+                                popUpTo(Screen.Home.route) { inclusive = false }
+                            }
+                        }
+                        Screen.Profile.route -> {
+                            navController.navigate(Screen.Profile.route) {
+                                popUpTo(Screen.Home.route) { inclusive = false }
+                            }
+                        }
+                        "more" -> {
+                            navController.navigate(Screen.Profile.route) {
+                                popUpTo(Screen.Home.route) { inclusive = false }
+                            }
+                        }
                     }
                 }
             )
-        }
+        },
     ) {paddingValues ->
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)){
+        Box(modifier = Modifier.fillMaxSize()){
             when {
                 isLoading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -111,12 +157,53 @@ fun HomeScreen(
                     }
                 }
                 homeData != null -> {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
                         //banner
+                        item {
+                            Column(
+                                modifier = Modifier.background(DarkBlue)
+                            ) {
+                                HomeHeader(
+                                    userName = userName,
+                                    cartItemCount = cartItemCount,
+                                    onCartClick = {navController.navigate(Screen.Cart.route)}
+                                )
+                                HomeSearchBar(
+                                    placeholder = "Search products or store",
+                                    onClick = {
+                                        homeData?.categories?.firstOrNull()?.let { category ->
+                                            navController.navigate(Screen.ProductList.createRoute(category.id))
+                                        }
+                                    }
+                                )
+                                DeliveryInfoSection(
+                                    deliveryAddress = deliveryAddress,
+                                    deliveryTime = "1 Hour",
+                                    onAddressClick = {
+                                        //for this implementation pending ....
+                                    },
+                                    onTimeClick = {
+                                        //this too pending ....
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
                         if (homeData!!.banners.isNotEmpty()) {
                             item {
                                 BannerSection(banners = homeData!!.banners)
                             }
+                        }
+                        item {
+                            RecommendedProductsSection(
+                                products = emptyList(),
+                                onProductClick = {product ->
+                                    navController.navigate(Screen.ProductList.createRoute(product.store))
+                                },
+                                onAddToCart = {product ->
+                                    cartViewModel.addToCart(product, 1)
+                                }
+                            )
                         }
                         //categories
                         if (homeData!!.categories.isNotEmpty()){
@@ -147,11 +234,39 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         item {
-                            Text(
-                                text = "Nearby Stores",
-                                style = MaterialTheme.typography.headlineMedium
-                            )
+                            Column(
+                                modifier = Modifier.background(DarkBlue).fillMaxWidth()
+                            ) {
+                                HomeHeader(
+                                    userName = userName,
+                                    cartItemCount = cartItemCount,
+                                    onCartClick = { navController.navigate(Screen.Cart.route) }
+                                )
+                                HomeSearchBar(
+                                    placeholder = "Search products or store",
+                                    onClick = {
+                                        stores.firstOrNull()?.let { store ->
+                                            navController.navigate(
+                                                Screen.ProductList.createRoute(
+                                                    store.id
+                                                )
+                                            )
+                                        }
+                                    }
+                                )
+                                DeliveryInfoSection(
+                                    deliveryAddress = deliveryAddress,
+                                    deliveryTime = "1 Hour"
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
                         }
+                        item { Text(
+                            text = "Nearby Stores",
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                        }
+
                         items(stores) { store ->
                             StoreCard(
                                 store = store,
@@ -218,35 +333,51 @@ onClick: () -> Unit
 @Composable
 fun BannerSection(banners: List<Banner>){
     LazyRow(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp, horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(banners){banner ->
             Card(
-                modifier = Modifier.width(300.dp).height(150.dp).clip(RoundedCornerShape(12.dp))
+                modifier = Modifier
+                    .width(300.dp)
+                    .height(150.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                Image(
-                    painter = rememberAsyncImagePainter(banner.image),
-                    contentDescription = banner.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-                Box(
-                    modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)).padding(16.dp),
-                    contentAlignment = Alignment.BottomStart
-                ) {
-                    Column {
-                        Text(
-                            text = banner.title,
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = banner.description,
-                            color = Color.White,
-                            fontSize = 14.sp
-                        )
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Image(
+                        painter = rememberAsyncImagePainter(banner.image),
+                        contentDescription = banner.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    // Overlay with orange/beige tint for first banner
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                if (banners.indexOf(banner) == 0) {
+                                    OrangeAccent.copy(alpha = 0.7f)
+                                } else {
+                                    Beige.copy(alpha = 0.5f)
+                                }
+                            )
+                            .padding(16.dp),
+                        contentAlignment = Alignment.BottomStart
+                    ) {
+                        Column {
+                            Text(
+                                text = banner.title,
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = banner.description,
+                                color = Color.White,
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                 }
             }
@@ -261,43 +392,55 @@ fun CategorySection(categories: List<Category>, navController: NavController){
             text = "Shop by Category",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
+            color = Color(0xFF212121),
             modifier = Modifier.padding(bottom = 16.dp)
         )
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             items(categories){ category ->
                 Card(
-                    modifier = Modifier.width(100.dp).clickable{
-                        navController.navigate(
-                            Screen.ProductList.createRoute(category.id)
-                        )
-                    },
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier
+                        .width(100.dp)
+                        .clickable{
+                            navController.navigate(
+                                Screen.ProductList.createRoute(category.id)
+                            )
+                        },
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                            Box(
-                                modifier = Modifier.size(50.dp).background(Color.Gray, RoundedCornerShape(8.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = category.name.first().toString(),
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-
+                        Box(
+                            modifier = Modifier
+                                .size(50.dp)
+                                .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = category.name.first().toString().uppercase(),
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF757575)
+                            )
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = category.name,
                             fontSize = 12.sp,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            color = Color(0xFF212121),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            maxLines = 2
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "View All",
                             fontSize = 10.sp,
-                            color = Color.Gray
+                            color = Color(0xFF757575)
                         )
                     }
                 }
