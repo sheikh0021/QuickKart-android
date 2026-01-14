@@ -2,6 +2,9 @@ package com.application.quickkartcustomer.ui.navigation
 
 import CheckoutScreen
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph
 import androidx.navigation.NavHostController
@@ -10,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
+import com.application.quickkartcustomer.core.util.PreferencesManager
 import com.application.quickkartcustomer.presentation.auth.login.LoginScreen
 import com.application.quickkartcustomer.presentation.auth.register.RegisterScreen
 import com.application.quickkartcustomer.presentation.cart.CartScreen
@@ -19,7 +23,7 @@ import com.application.quickkartcustomer.presentation.order.OrderListScreen
 import com.application.quickkartcustomer.presentation.product.ProductListScreen
 import com.application.quickkartcustomer.presentation.profile.ProfileScreen
 import androidx.compose.runtime.getValue
-
+import com.application.quickkartcustomer.presentation.tracking.OrderTrackingScreen
 
 
 sealed class Screen(val route: String) {
@@ -43,6 +47,7 @@ sealed class Screen(val route: String) {
     object Tracking  : Screen("tracking/{orderId}") {
         fun createRoute(orderId: Int) = "tracking/$orderId"
     }
+    object OrderTracking : Screen("order_tracking")
     object Profile : Screen("profile")
 }
 
@@ -57,18 +62,32 @@ fun getBottomNavRoute(route: String?): String {
         route == null -> Screen.Home.route
         route == Screen.Home.route -> Screen.Home.route
         route == Screen.Categories.route -> Screen.Categories.route
-        route == Screen.Profile.route -> "more" // Profile screen maps to "more" in bottom nav
-        route.startsWith("more") -> "more"
+        route == Screen.Profile.route -> Screen.Profile.route
+        route == Screen.OrderTracking.route -> "more"
         route.startsWith(Screen.ProductList.route) -> Screen.Home.route
         route.startsWith(Screen.Cart.route) -> Screen.Home.route
-        route.startsWith(Screen.OrderList.route) -> "more" // Order list maps to "more"
-        route.startsWith(Screen.OrderDetail.route) -> "more" // Order detail maps to "more"
+        route.startsWith(Screen.OrderList.route) -> "more"
+        route.startsWith(Screen.OrderDetail.route) -> "more"
         else -> Screen.Home.route
     }
 }
 
 @Composable
 fun NavGraph(navController: NavHostController){
+    val context = LocalContext.current
+    val preferencesManager = remember { PreferencesManager(context) }
+    
+    // Check login state on app start and navigate accordingly
+    LaunchedEffect(Unit) {
+        if (preferencesManager.isLoggedIn()) {
+            // User is logged in, navigate to home screen
+            navController.navigate(Screen.Home.route) {
+                // Clear back stack to prevent going back to login
+                popUpTo(Screen.Login.route) { inclusive = true }
+            }
+        }
+    }
+    
     NavHost(
         navController = navController,
         startDestination = Screen.Login.route
@@ -83,10 +102,13 @@ fun NavGraph(navController: NavHostController){
             HomeScreen(navController)
         }
         composable(Screen.Categories.route) {
-            HomeScreen(navController)
+            com.application.quickkartcustomer.presentation.categories.CategoriesScreen(navController)
         }
         composable(Screen.Profile.route) {
             ProfileScreen(navController)
+        }
+        composable(Screen.OrderTracking.route) {
+            OrderTrackingScreen(navController)
         }
         composable(
             route = Screen.ProductList.route,

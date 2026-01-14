@@ -22,3 +22,9 @@ class ProductMapper {
         )
     }
 }
+
+// Extension function to convert list of ProductDto to list of Product
+fun List<ProductDto>.toProductList(): List<Product> {
+    val mapper = ProductMapper()
+    return this.map { mapper.mapToDomain(it) }
+}

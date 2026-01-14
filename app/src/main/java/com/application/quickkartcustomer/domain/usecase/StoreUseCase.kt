@@ -1,6 +1,7 @@
 package com.application.quickkartcustomer.domain.usecase
 
 import com.application.quickkartcustomer.domain.model.HomeData
+import com.application.quickkartcustomer.domain.model.Product
 import com.application.quickkartcustomer.domain.model.Store
 import com.application.quickkartcustomer.domain.repository.StoreRepository
 
@@ -13,5 +14,8 @@ class StoreUseCase(private val storeRepository: StoreRepository) {
     }
     suspend fun getHomeData(): Result<HomeData>{
         return storeRepository.getHomeData()
+    }
+    suspend fun getProductsByCategory(categoryId: Int): Result<List<Product>> {
+        return storeRepository.getProductsByCategory(categoryId)
     }
 }

@@ -31,8 +31,7 @@ object NetworkModule {
     @Singleton
     @Named("authenticated")
     fun provideAuthenticatedRetrofit(preferencesManager: PreferencesManager): Retrofit {
-        val token = preferencesManager.getToken()
-        return RetrofitClient.getAuthenticatedClient(token)
+        return RetrofitClient.getAuthenticatedClient(preferencesManager)
     }
 
     @Provides

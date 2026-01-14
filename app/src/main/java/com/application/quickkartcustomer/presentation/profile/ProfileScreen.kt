@@ -4,6 +4,7 @@ package com.application.quickkartcustomer.presentation.profile
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,17 +27,29 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
+import com.application.quickkartcustomer.core.util.PreferencesManager
+import com.application.quickkartcustomer.presentation.cart.CartViewModel
+import com.application.quickkartcustomer.ui.components.DeliveryInfoSection
+import com.application.quickkartcustomer.ui.components.HomeHeader
+import com.application.quickkartcustomer.ui.components.HomeSearchBar
 import com.application.quickkartcustomer.ui.components.QuickKartButton
 import com.application.quickkartcustomer.ui.components.QuickKartBottomNavigation
 import com.application.quickkartcustomer.ui.navigation.Screen
 import com.application.quickkartcustomer.ui.navigation.getBottomNavRoute
+import com.application.quickkartcustomer.ui.theme.DarkBlue
+import com.application.quickkartcustomer.ui.theme.TextGray
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     navController: NavController,
-    viewModel: ProfileViewModel = hiltViewModel()
+    viewModel: ProfileViewModel = hiltViewModel(),
+    cartViewModel: CartViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+    val preferencesManager = remember { PreferencesManager(context) }
+    val user = preferencesManager.getUser()
     val profile by viewModel.profile.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
@@ -47,7 +60,6 @@ fun ProfileScreen(
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-    // Handle logout navigation
     LaunchedEffect(isLoggedOut) {
         if (isLoggedOut) {
             navController.navigate(Screen.Login.route) {
@@ -56,26 +68,33 @@ fun ProfileScreen(
         }
     }
 
-    // Show success message
     successMessage?.let { message ->
         LaunchedEffect(message) {
             kotlinx.coroutines.delay(2000)
             viewModel.clearSuccessMessage()
         }
     }
+    val userName = user?.firstName?.takeIf { it.isNotEmpty() }
+        ?: user?.username?.takeIf { it.isNotEmpty() }
+        ?: "User"
+
+    val deliveryAddress = user?.let { "${it.firstName} ${it.lastName}" }
+        ?: "Green Way 3000, Sydney"
+
+    val cart by cartViewModel.cart.collectAsState()
+    val cartItemCount = cart.totalItems
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Profile", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF4CAF50),
+                    containerColor = DarkBlue,
                     titleContentColor = Color.White
                 )
             )
         },
         bottomBar = {
-            // Get current route for bottom navigation highlighting
             val navHostController = navController as NavHostController
             val navBackStackEntry by navHostController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
@@ -95,11 +114,11 @@ fun ProfileScreen(
                                 popUpTo(Screen.Home.route) { inclusive = false }
                             }
                         }
-                        Screen.Profile.route -> {
-                            // Already on profile
-                        }
+                        Screen.Profile.route -> {}
                         "more" -> {
-                            // Already on profile (more maps to profile)
+                            navController.navigate(Screen.OrderTracking.route) {
+                                popUpTo(Screen.Home.route) {inclusive = false}
+                            }
                         }
                     }
                 }
@@ -109,7 +128,6 @@ fun ProfileScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
         ) {
             when {
                 isLoading && profile == null -> {
@@ -138,93 +156,95 @@ fun ProfileScreen(
                     }
                 }
                 profile != null -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        // Profile Header
-                        ProfileHeader(profile = profile!!)
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Success Message
-                        successMessage?.let { message ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFFE8F5E9)
-                                )
+                    LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+                        item{
+                            Column(
+                                modifier = Modifier.background(DarkBlue)
                             ) {
-                                Text(
-                                    text = message,
-                                    modifier = Modifier.padding(16.dp),
-                                    color = Color(0xFF4CAF50),
-                                    fontWeight = FontWeight.Medium
-                                )
+                                Spacer(modifier = Modifier.height(8.dp))
                             }
-                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                        successMessage?.let { message ->
+                            item {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFFE8F5E9)
+                                    )
+                                ) {
+                                    Text(
+                                        text = message,
+                                        modifier = Modifier.padding(16.dp),
+                                        color = Color(0xFF4CAF50),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+                        item {
+                            ProfileHeader(profile = profile!!)
+                        }
+                        item {
+                            ProfileMenuItem(
+                                icon = Icons.Default.Edit,
+                                title = "Edit Profile",
+                                onClick = {showEditDialog = true}
+                            )
+                        }
+                        item {
+                            ProfileMenuItem(
+                                icon = Icons.Default.Lock,
+                                title = "Change Password",
+                                onClick = {showEditDialog = true}
+                            )
+                        }
+                        item {
+                            ProfileMenuItem(
+                                icon = Icons.Default.LocationOn,
+                                title = "My Addresses",
+                                onClick = {}
+                            )
                         }
 
-                        // Profile Options
-                        ProfileMenuItem(
-                            icon = Icons.Default.Edit,
-                            title = "Edit Profile",
-                            onClick = { showEditDialog = true }
-                        )
+                        item {
+                            ProfileMenuItem(
+                                icon = Icons.Default.ShoppingCart,
+                                title = "My Orders",
+                                onClick = {navController.navigate(Screen.OrderList.route)}
+                            )
+                        }
 
-                        ProfileMenuItem(
-                            icon = Icons.Default.Lock,
-                            title = "Change Password",
-                            onClick = { showPasswordDialog = true }
-                        )
+                        item {
+                            ProfileMenuItem(
+                                icon = Icons.Default.Notifications,
+                                title = "Notifications",
+                                subtitle = "Enabled",
+                                onClick = {}
+                            )
+                        }
 
-                        ProfileMenuItem(
-                            icon = Icons.Default.LocationOn,
-                            title = "My Addresses",
-                            onClick = { /* Navigate to addresses */ }
-                        )
+                        item {
+                            ProfileMenuItem(
+                                icon = Icons.Default.Info,
+                                title = "About",
+                                subtitle = "Version 1.0",
+                                onClick = {}
+                            )
+                        }
 
-                        ProfileMenuItem(
-                            icon = Icons.Default.ShoppingCart,
-                            title = "My Orders",
-                            onClick = { navController.navigate(Screen.OrderList.route) }
-                        )
-
-                        ProfileMenuItem(
-                            icon = Icons.Default.Notifications,
-                            title = "Notifications",
-                            subtitle = "Enabled",
-                            onClick = { /* Navigate to notification settings */ }
-                        )
-
-                        ProfileMenuItem(
-                            icon = Icons.Default.Info,
-                            title = "About",
-                            subtitle = "Version 1.0.0",
-                            onClick = { /* Show about dialog */ }
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Logout Button
-                        QuickKartButton(
-                            text = "Logout",
-                            onClick = { showLogoutDialog = true },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            backgroundColor = Color.Red
-                        )
-
-                        Spacer(modifier = Modifier.height(32.dp))
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            QuickKartButton(
+                                text = "Logout",
+                                onClick = {showLogoutDialog = true},
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
+                                backgroundColor = Color.Red
+                            )
+                            Spacer(modifier = Modifier.height(32.dp))
+                        }
                     }
                 }
             }
-
-            // Dialogs
             if (showEditDialog && profile != null) {
                 EditProfileDialog(
                     profile = profile!!,
@@ -266,9 +286,10 @@ fun ProfileHeader(profile: com.application.quickkartcustomer.domain.model.UserPr
             .fillMaxWidth()
             .padding(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF4CAF50)
+            containerColor = Color.White
         ),
-        shape = RoundedCornerShape(16.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column(
             modifier = Modifier
@@ -281,14 +302,14 @@ fun ProfileHeader(profile: com.application.quickkartcustomer.domain.model.UserPr
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(Color.White),
+                    .background(Color(0xFFF5F5F5)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = profile.firstName.firstOrNull()?.uppercase() ?: "U",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4CAF50)
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Profile",
+                    tint = DarkBlue,
+                    modifier = Modifier.size(40.dp)
                 )
             }
 
@@ -296,9 +317,9 @@ fun ProfileHeader(profile: com.application.quickkartcustomer.domain.model.UserPr
 
             Text(
                 text = "${profile.firstName} ${profile.lastName}",
-                fontSize = 24.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = Color(0xFF212121)
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -306,7 +327,7 @@ fun ProfileHeader(profile: com.application.quickkartcustomer.domain.model.UserPr
             Text(
                 text = profile.email,
                 fontSize = 14.sp,
-                color = Color.White.copy(alpha = 0.9f)
+                color = TextGray
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -314,7 +335,7 @@ fun ProfileHeader(profile: com.application.quickkartcustomer.domain.model.UserPr
             Text(
                 text = profile.phoneNumber,
                 fontSize = 14.sp,
-                color = Color.White.copy(alpha = 0.9f)
+                color = TextGray
             )
         }
     }
@@ -335,7 +356,8 @@ fun ProfileMenuItem(
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier
@@ -346,7 +368,7 @@ fun ProfileMenuItem(
             Icon(
                 imageVector = icon,
                 contentDescription = title,
-                tint = Color(0xFF4CAF50),
+                tint = DarkBlue,
                 modifier = Modifier.size(24.dp)
             )
 
@@ -356,13 +378,14 @@ fun ProfileMenuItem(
                 Text(
                     text = title,
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF212121)
                 )
                 subtitle?.let {
                     Text(
                         text = it,
                         fontSize = 12.sp,
-                        color = Color.Gray
+                        color = TextGray
                     )
                 }
             }
@@ -370,7 +393,7 @@ fun ProfileMenuItem(
             Icon(
                 imageVector = Icons.Default.ArrowForward,
                 contentDescription = "Go",
-                tint = Color.Gray,
+                tint = TextGray,
                 modifier = Modifier.size(20.dp)
             )
         }

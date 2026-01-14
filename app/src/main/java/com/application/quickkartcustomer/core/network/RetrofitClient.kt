@@ -1,6 +1,7 @@
 package com.application.quickkartcustomer.core.network
 
 import com.application.quickkartcustomer.core.util.Constants
+import com.application.quickkartcustomer.core.util.PreferencesManager
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -32,13 +33,14 @@ object RetrofitClient {
     }
 
     //Authenticated client(for protected endpoints)
-    fun getAuthenticatedClient(token: String?): Retrofit {
-        if (authenticatedRetrofit == null || token != null) {
+    fun getAuthenticatedClient(preferencesManager: PreferencesManager): Retrofit {
+        if (authenticatedRetrofit == null) {
             val interceptor = HttpLoggingInterceptor()
             interceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
 
             val authInterceptor = Interceptor {chain ->
                 val original = chain.request()
+                val token = preferencesManager.getToken()
                 val request = if (!token.isNullOrEmpty()) {
                     original.newBuilder().header("Authorization", "Bearer $token").build()
                 } else {
@@ -56,12 +58,4 @@ object RetrofitClient {
         }
         return authenticatedRetrofit!!
     }
-//legacy method for backward compatibility
-fun getClient(token: String? = null): Retrofit {
-    return if (token != null) {
-        getAuthenticatedClient(token)
-    }else {
-        getClient()
-    }
-}
 }
