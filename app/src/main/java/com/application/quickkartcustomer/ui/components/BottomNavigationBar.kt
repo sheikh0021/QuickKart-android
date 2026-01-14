@@ -16,7 +16,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
@@ -27,17 +26,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.application.quickkartcustomer.R
 
 sealed class BottomNavItem(
     val route: String,
     val label: String,
-    val icon: ImageVector
+    val icon: ImageVector? = null,
+    val drawableResId: Int? = null
 ){
     object Home : BottomNavItem("home", "Home", Icons.Default.Home)
-    object Categories : BottomNavItem("categories", "Categories", Icons.Default.Menu)
+    object Categories : BottomNavItem("categories", "Categories", drawableResId = R.drawable.category)
     object Profile : BottomNavItem("profile", "Profile", Icons.Default.Person)
     object More : BottomNavItem("more", "More", Icons.Default.MoreVert)
 }
@@ -106,12 +108,21 @@ fun BottomNavItem(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = item.label,
-                        tint = Color(0xFFFFEB3B), // Yellow icon for active
-                        modifier = Modifier.size(28.dp)
-                    )
+                    if (item.icon != null) {
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = item.label,
+                            tint = Color(0xFFF9B023), // Dark yellow for selected
+                            modifier = Modifier.size(28.dp)
+                        )
+                    } else if (item.drawableResId != null) {
+                        Icon(
+                            painter = painterResource(id = item.drawableResId),
+                            contentDescription = item.label,
+                            tint = Color(0xFFF9B023), // Dark yellow for selected
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
             }
             Text(
@@ -129,17 +140,26 @@ fun BottomNavItem(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = item.icon,
-                    contentDescription = item.label,
-                    tint = Color(0xFF757575), // Gray for inactive
-                    modifier = Modifier.size(24.dp)
-                )
+                if (item.icon != null) {
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = item.label,
+                        tint = Color(0xFFBDBDBD), // Lighter gray for inactive (grayscale effect)
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else if (item.drawableResId != null) {
+                    Icon(
+                        painter = painterResource(id = item.drawableResId),
+                        contentDescription = item.label,
+                        tint = Color(0xFFBDBDBD), // Lighter gray for inactive (grayscale effect)
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
             Text(
                 text = item.label,
                 fontSize = 10.sp,
-                color = Color(0xFF757575),
+                color = Color(0xFFBDBDBD), // Lighter gray for inactive text
                 fontWeight = FontWeight.Normal,
                 modifier = Modifier.padding(horizontal = 12.dp)
             )

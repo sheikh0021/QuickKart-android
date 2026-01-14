@@ -2,10 +2,12 @@ package com.application.quickkartcustomer.data.repository
 
 import com.application.quickkartcustomer.data.mapper.StoreMapper
 import com.application.quickkartcustomer.data.mapper.toCategoryList
+import com.application.quickkartcustomer.data.mapper.toProductList
 import com.application.quickkartcustomer.data.remote.api.StoreApi
 import com.application.quickkartcustomer.domain.model.Banner
 import com.application.quickkartcustomer.domain.model.Category
 import com.application.quickkartcustomer.domain.model.HomeData
+import com.application.quickkartcustomer.domain.model.Product
 import com.application.quickkartcustomer.domain.model.Store
 import com.application.quickkartcustomer.domain.repository.StoreRepository
 
@@ -56,6 +58,21 @@ class StoreRepositoryImpl(
                 } ?: Result.failure(Exception("Empty response"))
             } else {
                 Result.failure(Exception("Failed to load home data: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getProductsByCategory(categoryId: Int): Result<List<Product>> {
+        return try {
+            val response = storeApi.getProductsByCategory(categoryId)
+            if (response.isSuccessful) {
+                response.body()?.let { dto ->
+                    Result.success(dto.products.toProductList())
+                } ?: Result.failure(Exception("Empty response"))
+            } else {
+                Result.failure(Exception("Failed to load products: ${response.message()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

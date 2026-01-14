@@ -62,7 +62,6 @@ import com.application.quickkartcustomer.domain.model.Category
 import com.application.quickkartcustomer.presentation.cart.CartViewModel
 import com.application.quickkartcustomer.ui.components.DeliveryInfoSection
 import com.application.quickkartcustomer.ui.components.HomeHeader
-import com.application.quickkartcustomer.ui.components.HomeSearchBar
 import com.application.quickkartcustomer.ui.components.QuickKartBottomNavigation
 import com.application.quickkartcustomer.ui.theme.DarkBlue
 import com.application.quickkartcustomer.ui.theme.OrangeAccent
@@ -89,6 +88,19 @@ fun HomeScreen(
         if (!preferencesManager.isLoggedIn()){
             navController.navigate(Screen.Login.route){
                 popUpTo(Screen.Home.route) {inclusive = true}
+            }
+        }
+    }
+    
+    LaunchedEffect(error) {
+        val errorMessage = error
+        if (errorMessage != null && (errorMessage.contains("401") || errorMessage.contains("Unauthorized") || errorMessage.contains("Authentication failed"))) {
+            // Clear stored authentication data
+            preferencesManager.clearData()
+            // Navigate to login screen and clear back stack
+            navController.navigate(Screen.Login.route) {
+                popUpTo(Screen.Home.route) { inclusive = true }
+                launchSingleTop = true
             }
         }
     }
@@ -130,7 +142,7 @@ fun HomeScreen(
                             }
                         }
                         "more" -> {
-                            navController.navigate(Screen.Profile.route) {
+                            navController.navigate(Screen.OrderTracking.route) {
                                 popUpTo(Screen.Home.route) { inclusive = false }
                             }
                         }
@@ -167,14 +179,6 @@ fun HomeScreen(
                                     userName = userName,
                                     cartItemCount = cartItemCount,
                                     onCartClick = {navController.navigate(Screen.Cart.route)}
-                                )
-                                HomeSearchBar(
-                                    placeholder = "Search products or store",
-                                    onClick = {
-                                        homeData?.categories?.firstOrNull()?.let { category ->
-                                            navController.navigate(Screen.ProductList.createRoute(category.id))
-                                        }
-                                    }
                                 )
                                 DeliveryInfoSection(
                                     deliveryAddress = deliveryAddress,
@@ -241,18 +245,6 @@ fun HomeScreen(
                                     userName = userName,
                                     cartItemCount = cartItemCount,
                                     onCartClick = { navController.navigate(Screen.Cart.route) }
-                                )
-                                HomeSearchBar(
-                                    placeholder = "Search products or store",
-                                    onClick = {
-                                        stores.firstOrNull()?.let { store ->
-                                            navController.navigate(
-                                                Screen.ProductList.createRoute(
-                                                    store.id
-                                                )
-                                            )
-                                        }
-                                    }
                                 )
                                 DeliveryInfoSection(
                                     deliveryAddress = deliveryAddress,
@@ -474,15 +466,25 @@ fun StoreSection(stores: List<Store>, navController: NavController) {
                     // Store Image Placeholder
                     Box(
                         modifier = Modifier
-                            .size(60.dp)
-                            .background(Color.LightGray, RoundedCornerShape(8.dp)),
+                            .size(60.dp).clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFF5F5F5)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = store.name.first().toString(),
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (store.image?.isNotEmpty() == true){
+                            AsyncImage(
+                                model = store.image,
+                                contentDescription = store.name,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(
+                                text = store.name.first().toString(),
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF212121)
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.width(16.dp))

@@ -74,7 +74,7 @@ class QuickKartFirebaseMessagingService : FirebaseMessagingService() {
                 val authToken = preferencesManager.getToken()
 
                 if (!authToken.isNullOrEmpty()){
-                    val retrofit = RetrofitClient.getAuthenticatedClient(authToken)
+                    val retrofit = RetrofitClient.getAuthenticatedClient(preferencesManager)
                     val profileApi = retrofit.create(ProfileApi::class.java)
 
                     val request = mapOf("fcm_token" to token)
