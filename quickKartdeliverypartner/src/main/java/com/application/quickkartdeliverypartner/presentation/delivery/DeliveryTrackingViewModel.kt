@@ -12,8 +12,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
-@HiltViewModel
-class DeliveryTrackingViewModel @Inject constructor(
+class DeliveryTrackingViewModel(
     private val deliveryUseCase: DeliveryUseCase
 ): ViewModel() {
 

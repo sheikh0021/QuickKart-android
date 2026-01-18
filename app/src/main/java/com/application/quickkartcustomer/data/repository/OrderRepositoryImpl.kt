@@ -6,6 +6,7 @@ import com.application.quickkartcustomer.data.remote.api.OrderApi
 import com.application.quickkartcustomer.data.remote.dto.AddressDto
 import com.application.quickkartcustomer.data.remote.dto.OrderItemDto
 import com.application.quickkartcustomer.data.remote.dto.OrderItemRequestDto
+import com.application.quickkartcustomer.data.remote.dto.OrderListResponseDto
 import com.application.quickkartcustomer.data.remote.dto.OrderRequestDto
 import com.application.quickkartcustomer.domain.model.Address
 import com.application.quickkartcustomer.domain.model.Order
@@ -51,15 +52,27 @@ class OrderRepositoryImpl @Inject constructor(
 
     override suspend fun getOrderHistory(): Result<List<Order>> {
         return try {
+            println("OrderRepositoryImpl: Calling getOrderHistory API")
             val response = orderApi.getOrderHistory()
+            println("OrderRepositoryImpl: API response code: ${response.code()}")
+            println("OrderRepositoryImpl: API response message: ${response.message()}")
+
             if (response.isSuccessful) {
-                response.body()?.let { dtoList ->
-                    Result.success(dtoList.map { orderMapper.mapOrderToDomain(it) })
-                } ?: Result.failure(Exception("Empty response"))
+                response.body()?.let { paginatedResponse ->
+                    println("OrderRepositoryImpl: Received paginated response with ${paginatedResponse.results.size} orders")
+                    val orders = paginatedResponse.results.map { orderMapper.mapOrderToDomain(it) }
+                    println("OrderRepositoryImpl: Mapped to ${orders.size} domain orders")
+                    Result.success(orders)
+                } ?: run {
+                    println("OrderRepositoryImpl: Empty response body")
+                    Result.failure(Exception("Empty response"))
+                }
             } else {
+                println("OrderRepositoryImpl: API call failed with code ${response.code()}")
                 Result.failure(Exception("Failed to fetch orders: ${response.message()}"))
             }
         } catch (e: Exception) {
+            println("OrderRepositoryImpl: Exception during API call: ${e.message}")
             Result.failure(e)
         }
     }

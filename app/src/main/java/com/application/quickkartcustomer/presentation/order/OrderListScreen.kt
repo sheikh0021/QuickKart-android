@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
@@ -28,6 +29,14 @@ fun OrderListScreen(
 ) {
     val orders by viewModel.orders.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+
+    // Debug logging
+    LaunchedEffect(orders) {
+        println("OrderListScreen: Displaying ${orders.size} orders")
+        orders.forEach { order ->
+            println("OrderListScreen: Order ${order.id} - ${order.orderNumber} - ${order.status}")
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -103,11 +112,13 @@ fun OrderItemCard(order: Order, onClick: () -> Unit) {
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = order.status,
-                    color = when (order.status) {
-                        "DELIVERED" -> Color(0xFF4CAF50)
-                        "OUT_FOR_DELIVERY" -> Color(0xFFFF9800)
-                        "PACKED" -> Color(0xFF2196F3)
+                    text = order.status.replace("_", " ").uppercase(),
+                    color = when (order.status.lowercase()) {
+                        "delivered" -> Color(0xFF4CAF50)
+                        "out_for_delivery" -> Color(0xFFFF9800)
+                        "packed" -> Color(0xFF2196F3)
+                        "confirmed" -> Color(0xFFFF9800)
+                        "placed" -> Color(0xFF2196F3)
                         else -> Color.Gray
                     },
                     fontSize = 12.sp,

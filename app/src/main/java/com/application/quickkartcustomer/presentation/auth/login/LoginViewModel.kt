@@ -14,6 +14,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 @HiltViewModel
@@ -36,11 +37,19 @@ class LoginViewModel @Inject constructor(private val authUseCase: AuthUseCase,
 
             authUseCase.login(username, password).fold(
                 onSuccess = {authResponse ->
-                    sendFcmTokenToBackend()
-                    //save token and user data
+                    //save token and user data first
                     preferencesManager.saveToken(authResponse.tokens.access)
                     preferencesManager.saveUser(authResponse.user)
-                    _loginState.value = LoginState.Success
+
+                    // Send FCM token synchronously before marking login as success
+                    try {
+                        sendFcmTokenSync()
+                        _loginState.value = LoginState.Success
+                    } catch (e: Exception) {
+                        // Even if FCM fails, login should succeed
+                        Log.e("FCM", "Failed to send FCM token, but login successful", e)
+                        _loginState.value = LoginState.Success
+                    }
                 },
                 onFailure = {exception ->
                     _loginState.value = LoginState.Error(exception.message ?: "Login failed")
@@ -48,23 +57,38 @@ class LoginViewModel @Inject constructor(private val authUseCase: AuthUseCase,
             )
         }
     }
-    private fun sendFcmTokenToBackend() {
-        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-            if (!task.isSuccessful) {
-                Log.w("FCM", "Fetching FCM token failed", task.exception)
-                return@addOnCompleteListener
-            }
 
-            val token = task.result
+    private suspend fun sendFcmTokenSync() {
+        var lastException: Exception? = null
 
-            viewModelScope.launch {
-                try {
-                    profileUseCase.updateFcmToken(token)
-                } catch (e: Exception) {
-                    Log.e("FCM", "Failed to send token: ${e.message}")
+        // Retry FCM token retrieval up to 3 times with exponential backoff
+        for (attempt in 1..3) {
+            try {
+                Log.d("FCM", "Attempting FCM token retrieval (attempt $attempt)")
+                val token = FirebaseMessaging.getInstance().token.await()
+                profileUseCase.updateFcmToken(token)
+                Log.d("FCM", "FCM token sent to backend successfully")
+                return // Success, exit function
+            } catch (e: Exception) {
+                Log.e("FCM", "FCM token attempt $attempt failed: ${e.message}")
+                lastException = e
+
+                // If it's a SERVICE_NOT_AVAILABLE error, don't retry (Google Play Services issue)
+                if (e.message?.contains("SERVICE_NOT_AVAILABLE") == true) {
+                    Log.w("FCM", "Google Play Services not available - FCM will not work on this device")
+                    break
+                }
+
+                // Wait before retry (exponential backoff)
+                if (attempt < 3) {
+                    kotlinx.coroutines.delay(1000L * attempt) // 1s, 2s, 3s
                 }
             }
         }
+
+        // If we get here, all attempts failed
+        Log.e("FCM", "All FCM token retrieval attempts failed")
+        throw lastException ?: Exception("FCM token retrieval failed")
     }
 }
 

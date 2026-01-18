@@ -13,4 +13,7 @@ interface AuthApi {
 
     @POST("users/register/")
     suspend fun register(@Body request: RegisterRequest): Response<AuthResponseDto>
+
+    @POST("users/update-fcm-token/")
+    suspend fun updateFcmToken(@Body request: Map<String, String>): Response<Map<String, String>>
 }

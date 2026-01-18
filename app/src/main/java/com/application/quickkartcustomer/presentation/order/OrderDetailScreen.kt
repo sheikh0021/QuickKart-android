@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.application.quickkartcustomer.domain.model.Order
+import com.application.quickkartcustomer.ui.navigation.Screen
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,12 +105,14 @@ fun OrderDetailContent(order: Order, navController: NavController ) {
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = order.status,
+                        text = order.status.replace("_", " ").uppercase(),
                         fontSize = 18.sp,
-                        color = when (order.status) {
-                            "DELIVERED" -> Color(0xFF4CAF50)
-                            "OUT_FOR_DELIVERY" -> Color(0xFFFF9800)
-                            "PACKED" -> Color(0xFF2196F3)
+                        color = when (order.status.lowercase()) {
+                            "delivered" -> Color(0xFF4CAF50)
+                            "out_for_delivery" -> Color(0xFFFF9800)
+                            "packed" -> Color(0xFF2196F3)
+                            "confirmed" -> Color(0xFFFF9800)
+                            "placed" -> Color(0xFF2196F3)
                             else -> Color.Gray
                         },
                         fontWeight = FontWeight.Bold
@@ -204,10 +207,10 @@ fun OrderDetailContent(order: Order, navController: NavController ) {
             }
         }
         //track order button
-        if (order.status in listOf("PLACED", "PACKED", "OUT_FOR_DELIVERY")){
+        if (order.status in listOf("placed", "confirmed", "packed", "out_for_delivery", "confirmed", "packed", "out_for_delivery", "PLACED", "PACKED", "OUT_FOR_DELIVERY", "CONFIRMED", "PACKED", "OUT_FOR_DELIVERY").map { it.lowercase() }){
             item {
                 Button(onClick = {
-//                    navController.navigate(Screen.OrderTracking.createRoute(order.id))
+                    navController.navigate(Screen.OrderTracking.route)
                 },
                     modifier = Modifier.fillMaxWidth()
                 ) {

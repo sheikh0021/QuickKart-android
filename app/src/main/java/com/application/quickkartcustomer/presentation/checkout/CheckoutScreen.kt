@@ -1,8 +1,11 @@
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -16,7 +19,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.window.Dialog
+import androidx.compose.material3.AlertDialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.application.quickkartcustomer.domain.model.Address
@@ -26,6 +31,9 @@ import com.application.quickkartcustomer.presentation.checkout.CheckoutViewModel
 import com.application.quickkartcustomer.ui.components.QuickKartButton
 import com.application.quickkartcustomer.ui.components.QuickKartTextField
 import com.application.quickkartcustomer.ui.navigation.Screen
+import com.application.quickkartcustomer.ui.theme.DarkBlue
+import com.application.quickkartcustomer.ui.theme.LightGray
+import com.application.quickkartcustomer.ui.theme.TextGray
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,7 +66,7 @@ fun CheckoutScreen(
             orderNumber = placedOrder!!.orderNumber,
             onDismiss = {
                 showSuccessDialog = false
-                navController.navigate(Screen.OrderDetail.createRoute(placedOrder!!.id)) {
+                navController.navigate(Screen.OrderTracking.route) {
                     popUpTo(Screen.Cart.route) {inclusive = true}
                 }
                 placedOrder = null
@@ -68,26 +76,16 @@ fun CheckoutScreen(
 
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Checkout", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        },
         bottomBar = {
-            if (!cart.isEmpty) {
+            if (!cart.isEmpty){
                 CheckoutBottomBar(
-                    cart =cart,
+                    cart = cart,
                     onPlaceOrderClick = {viewModel.placeOrder(orderNotes.ifBlank { null })},
                     isLoading = isLoading,
                     enabled = selectedAddress != null
                 )
             }
-        }
+        },
     ) { paddingValues ->
         if (showAddAddressDialog) {
             AddAddressDialog(
@@ -102,9 +100,11 @@ fun CheckoutScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues), // Space for bottom bar
-            contentPadding = PaddingValues(16.dp)
+                .padding(paddingValues),
         ) {
+            item {
+                CheckoutHeader(onBackClick = {navController.navigateUp()})
+            }
             // Cart Summary
             item {
                 CartSummarySection(cart = cart)
@@ -121,14 +121,11 @@ fun CheckoutScreen(
                 )
                 Spacer(modifier = Modifier.height(24.dp))
             }
-
-            // Payment Method (COD only for now)
             item {
                 PaymentMethodSection()
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // Order Notes
             item {
                 OrderNotesSection(
                     notes = orderNotes,
@@ -136,8 +133,6 @@ fun CheckoutScreen(
                 )
                 Spacer(modifier = Modifier.height(24.dp))
             }
-
-            // Error Message
             if (error != null) {
                 item {
                     Card(
@@ -154,18 +149,45 @@ fun CheckoutScreen(
                 }
             }
         }
+    }
+}
 
+@Composable
+fun CheckoutHeader(onBackClick: () -> Unit){
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier.size(40.dp).clip(CircleShape).background(LightGray).clickable(onClick = onBackClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = "Back",
+                tint = TextGray,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = "Checkout",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF212121),
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
     }
 }
 
 @Composable
 fun CartSummarySection(cart: Cart) {
-    Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Order Summary",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
+                color = Color(0xFF212121),
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
@@ -177,11 +199,11 @@ fun CartSummarySection(cart: Cart) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = item.productName, fontSize = 14.sp)
+                        Text(text = item.productName, fontSize = 14.sp, color = Color(0xFF212121))
                         Text(
                             text = "${item.quantity} × ₹${item.price}",
                             fontSize = 12.sp,
-                            color = Color.Gray
+                            color = TextGray
                         )
                     }
                     Text(
@@ -192,7 +214,10 @@ fun CartSummarySection(cart: Cart) {
                 }
             }
 
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp),
+                color = Color(0xFFE0E0E0),
+                thickness = 1.dp
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -201,17 +226,17 @@ fun CartSummarySection(cart: Cart) {
                 Text(
                     text = "Total (${cart.totalItems} items)",
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF212121)
                 )
                 Text(
                     text = "₹${cart.totalPrice}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4CAF50)
+                    color = Color(0xFF212121)
                 )
             }
         }
-    }
 }
 
 @Composable
@@ -221,7 +246,6 @@ fun DeliveryAddressSection(
     onAddressSelected: (Address) -> Unit,
     onAddAddressClick: () -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -231,17 +255,18 @@ fun DeliveryAddressSection(
                 Text(
                     text = "Delivery Address",
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF212121)
                 )
                 TextButton(onClick = onAddAddressClick) {
-                    Text("Add New")
+                    Text("Add New", color = DarkBlue)
                 }
             }
 
             if (addresses.isEmpty()) {
                 Text(
                     text = "No addresses found. Please add a delivery address.",
-                    color = Color.Gray,
+                    color = TextGray,
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
             } else {
@@ -254,7 +279,6 @@ fun DeliveryAddressSection(
                 }
             }
         }
-    }
 }
 
 @Composable
@@ -263,18 +287,12 @@ fun AddressItem(
     isSelected: Boolean,
     onSelected: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .clickable { onSelected() },
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) Color(0xFFE8F5E8) else Color.White
-        ),
-        border = if (isSelected) BorderStroke(2.dp, Color(0xFF4CAF50)) else null
-    ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(8.dp).background(
+                if (isSelected) LightGray.copy(alpha = 0.3f) else Color.White,
+                RoundedCornerShape(8.dp)
+            ).clickable{onSelected()}
+                .padding(16.dp),
             verticalAlignment = Alignment.Top
         ) {
             RadioButton(
@@ -285,29 +303,29 @@ fun AddressItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = address.fullAddress,
-                    fontSize = 14.sp
+                    fontSize = 14.sp,
+                    color = Color(0xFF212121)
                 )
                 if (address.isDefault) {
                     Text(
                         text = "Default Address",
                         fontSize = 12.sp,
-                        color = Color(0xFF4CAF50),
+                        color = TextGray,
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }
         }
-    }
 }
 
 @Composable
 fun PaymentMethodSection() {
-    Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Payment Method",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
+                color = Color(0xFF212121),
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
@@ -322,26 +340,25 @@ fun PaymentMethodSection() {
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
-                    Text(text = "Cash on Delivery", fontSize = 16.sp)
+                    Text(text = "Cash on Delivery", fontSize = 16.sp, color =  Color(0xFF212121))
                     Text(
                         text = "Pay when you receive your order",
                         fontSize = 12.sp,
-                        color = Color.Gray
+                        color = TextGray
                     )
                 }
             }
         }
-    }
 }
 
 @Composable
 fun OrderNotesSection(notes: String, onNotesChange: (String) -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Order Notes (Optional)",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
+                color = Color(0xFF212121),
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
@@ -354,14 +371,15 @@ fun OrderNotesSection(notes: String, onNotesChange: (String) -> Unit) {
                 maxLines = 5
             )
         }
-    }
+
 }
 
 @Composable
 fun CheckoutBottomBar(cart: Cart, onPlaceOrderClick: () -> Unit, isLoading: Boolean, enabled: Boolean = true) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shadowElevation = 8.dp
+        shadowElevation = 8.dp,
+        color = Color.White
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -369,21 +387,44 @@ fun CheckoutBottomBar(cart: Cart, onPlaceOrderClick: () -> Unit, isLoading: Bool
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Total: ₹${cart.totalPrice}",
+                    text = "Total",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF212121)
+                )
+                Text(
+                    text = " ₹${cart.totalPrice}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4CAF50)
+                    color = Color(0xFF212121)
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            QuickKartButton(
-                text = if (enabled)"Place Order" else "Select Address First",
+            Button(
                 onClick = onPlaceOrderClick,
-                isLoading = isLoading,
-                enabled = enabled
-            )
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = DarkBlue
+                ),
+                shape = RoundedCornerShape(12.dp),
+                enabled = enabled && !isLoading
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else {
+                    Text(
+                        text = if (enabled) "Place Order" else "Select Address First",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
         }
     }
 }
@@ -403,8 +444,9 @@ fun AddAddressDialog(
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(
                     text = "Add New Address",
-                    fontSize = 20.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
+                    color = Color(0xFF212121),
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
@@ -446,11 +488,9 @@ fun AddAddressDialog(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Cancel")
+                        Text("Cancel", color = TextGray)
                     }
-
                     Spacer(modifier = Modifier.width(8.dp))
-
                     QuickKartButton(
                         text = "Add Address",
                         onClick = {
@@ -481,7 +521,7 @@ fun OrderSuccessDialog(
                 text = "Order Placed Successfully",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF4CAF50)
+                color = DarkBlue
             )
         },
         text = {
@@ -489,19 +529,20 @@ fun OrderSuccessDialog(
                 Text(
                     text = "Your Order has been placed successfully",
                     fontSize = 16.sp,
+                    color = Color(0xFF212121),
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Text(
                     text = "Order Number: $orderNumber",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Gray
+                    color = Color(0xFF212121)
                 )
             }
         },
         confirmButton = {
             QuickKartButton(
-                text = "View Order",
+                text = "Track Order",
                 onClick = onDismiss
             )
         },

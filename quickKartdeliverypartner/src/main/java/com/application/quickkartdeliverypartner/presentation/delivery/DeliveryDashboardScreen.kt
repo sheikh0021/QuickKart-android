@@ -1,5 +1,6 @@
 package com.application.quickkartdeliverypartner.presentation.delivery
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,21 +17,37 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.application.quickkartdeliverypartner.ui.navigation.DeliveryScreen
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import com.application.quickkartdeliverypartner.domain.model.DeliveryAssignment
+import com.application.quickkartdeliverypartner.core.network.RetrofitClient
+import com.application.quickkartdeliverypartner.core.util.PreferencesManager
+import com.application.quickkartdeliverypartner.data.mapper.DeliveryMapper
+import com.application.quickkartdeliverypartner.data.remote.api.DeliveryApi
+import com.application.quickkartdeliverypartner.data.repository.DeliveryRepositoryImpl
+import com.application.quickkartdeliverypartner.domain.usecase.DeliveryUseCase
 
 
+@SuppressLint("ViewModelConstructorInComposable")
 @Composable
 fun DeliveryDashboardScreen(
-    navController: NavController,
-    viewModel: DeliveryDashboardViewModel = hiltViewModel()
+    navController: NavController
 ) {
+    val context = LocalContext.current
+    val preferencesManager = PreferencesManager(context)
+    RetrofitClient.init(preferencesManager)
+    val deliveryApi = RetrofitClient.getAuthenticatedClient().create(DeliveryApi::class.java)
+    val deliveryMapper = DeliveryMapper()
+    val deliveryRepository = DeliveryRepositoryImpl(deliveryApi, deliveryMapper)
+    val deliveryUseCase = DeliveryUseCase(deliveryRepository)
+    val viewModel = DeliveryDashboardViewModel(deliveryUseCase)
     val assignments by viewModel.assignments.collectAsState()
     val earnings by viewModel.earnings.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()

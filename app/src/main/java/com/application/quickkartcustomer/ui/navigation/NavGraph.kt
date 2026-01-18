@@ -62,12 +62,12 @@ fun getBottomNavRoute(route: String?): String {
         route == null -> Screen.Home.route
         route == Screen.Home.route -> Screen.Home.route
         route == Screen.Categories.route -> Screen.Categories.route
+        route == Screen.OrderTracking.route -> Screen.OrderTracking.route
         route == Screen.Profile.route -> Screen.Profile.route
-        route == Screen.OrderTracking.route -> "more"
         route.startsWith(Screen.ProductList.route) -> Screen.Home.route
         route.startsWith(Screen.Cart.route) -> Screen.Home.route
-        route.startsWith(Screen.OrderList.route) -> "more"
-        route.startsWith(Screen.OrderDetail.route) -> "more"
+        route.startsWith(Screen.OrderList.route) -> Screen.OrderTracking.route
+        route.startsWith(Screen.OrderDetail.route) -> Screen.OrderTracking.route
         else -> Screen.Home.route
     }
 }

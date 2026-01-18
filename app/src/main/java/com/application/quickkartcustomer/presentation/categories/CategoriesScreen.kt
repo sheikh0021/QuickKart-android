@@ -5,24 +5,28 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Clear
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -32,12 +36,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.AsyncImage
 import com.application.quickkartcustomer.domain.model.Category
 import com.application.quickkartcustomer.domain.model.Product
-import com.application.quickkartcustomer.ui.components.HomeHeader
 import com.application.quickkartcustomer.ui.components.QuickKartBottomNavigation
 import com.application.quickkartcustomer.ui.components.CartIconWithBadge
 import com.application.quickkartcustomer.ui.navigation.Screen
 import com.application.quickkartcustomer.ui.navigation.getBottomNavRoute
 import com.application.quickkartcustomer.ui.theme.DarkBlue
+import com.application.quickkartcustomer.ui.theme.LightGray
+import com.application.quickkartcustomer.ui.theme.Primary
 import com.application.quickkartcustomer.ui.theme.TextGray
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,7 +98,7 @@ fun CategoriesScreen(
                                 popUpTo(Screen.Home.route) { inclusive = false }
                             }
                         }
-                        "more" -> {
+                        Screen.OrderTracking.route -> {
                             navController.navigate(Screen.OrderTracking.route) {
                                 popUpTo(Screen.Home.route) { inclusive = false }
                             }
@@ -103,69 +108,306 @@ fun CategoriesScreen(
             )
         }
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            LightGray,
+                            Color.White
+                        )
+                    )
+                )
+                .padding(paddingValues)
+        ) {
             when {
                 isLoading && categories.isEmpty() -> {
                     CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
+                        color = Primary
                     )
                 }
                 error != null && categories.isEmpty() -> {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp),
+                            .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        Text(
-                            text = error ?: "Something went wrong",
-                            color = Color.Red,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.loadCategories() }) {
-                            Text("Retry")
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Oops!",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    color = Color(0xFF212121),
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = error ?: "Something went wrong",
+                                    color = Color.Red,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = { viewModel.loadCategories() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                                ) {
+                                    Text("Try Again", color = Color.White)
+                                }
+                            }
                         }
                     }
                 }
                 else -> {
                     LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues)
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 16.dp)
                     ) {
-                        // Header section (Categories specific)
+                        // Header section
                         item {
-                            Column(modifier = Modifier.background(DarkBlue)) {
-                                CategoryHeader(
-                                    title = "Shop by Category",
-                                    cartItemCount = cartItemCount,
-                                    onCartClick = { navController.navigate(Screen.Cart.route) }
-                                )
-                                CategorySearchBar(
-                                    query = searchQuery,
-                                    onQueryChange = { searchQuery = it },
-                                    placeholder = "Search categories..."
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
+                            CategoryHeaderCard(
+                                title = "Shop by Category",
+                                subtitle = "Find your favorite products",
+                                cartItemCount = cartItemCount,
+                                onCartClick = { navController.navigate(Screen.Cart.route) }
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
 
-                        // Categories with products
-                        items(filteredCategories) { category ->
-                            CategorySection(
-                                category = category,
-                                products = categoryProducts[category.id] ?: emptyList(),
-                                onProductClick = { product ->
-                                    // TODO: Navigate to product detail
-                                },
-                                onCategoryClick = { categoryId ->
-                                    // TODO: Navigate to category detail or expand
-                                },
-                                onAddToCart = { product ->
-                                    // TODO: Add to cart
+                        // Search bar
+                        item {
+                            CategorySearchBar(
+                                query = searchQuery,
+                                onQueryChange = { searchQuery = it },
+                                placeholder = "Search categories..."
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+
+                        // Categories grid
+                        if (filteredCategories.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "Browse Categories",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = Color(0xFF212121),
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 24.dp)
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
+
+                            // Grid layout for categories
+                            item {
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(2),
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.height(400.dp)
+                                ) {
+                                    items(filteredCategories) { category ->
+                                        CategoryGridCard(
+                                            category = category,
+                                            products = categoryProducts[category.id] ?: emptyList(),
+                                            onCategoryClick = { categoryId ->
+                                                // TODO: Navigate to category detail or expand
+                                            },
+                                            onProductClick = { product ->
+                                                // TODO: Navigate to product detail
+                                            },
+                                            onAddToCart = { product ->
+                                                // TODO: Add to cart
+                                            }
+                                        )
+                                    }
                                 }
+                            }
+                        } else {
+                            item {
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 24.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(32.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.List,
+                                            contentDescription = "No categories",
+                                            tint = TextGray,
+                                            modifier = Modifier.size(48.dp)
+                                        )
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        Text(
+                                            text = "No categories found",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = TextGray,
+                                            textAlign = TextAlign.Center
+                                        )
+                                        if (searchQuery.isNotEmpty()) {
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Text(
+                                                text = "Try adjusting your search",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = TextGray,
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CategoryGridCard(
+    category: Category,
+    products: List<Product>,
+    onCategoryClick: (Int) -> Unit,
+    onProductClick: (Product) -> Unit,
+    onAddToCart: (Product) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCategoryClick(category.id) },
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Category Image/Icon
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Primary.copy(alpha = 0.1f),
+                                Primary.copy(alpha = 0.05f)
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (category.image?.isNotEmpty() == true) {
+                    AsyncImage(
+                        model = category.image,
+                        contentDescription = category.name,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(
+                        text = category.name.firstOrNull()?.toString() ?: "?",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Primary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Category Name
+            Text(
+                text = category.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = Color(0xFF212121),
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Product Count
+            Text(
+                text = "${products.size} products",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextGray,
+                textAlign = TextAlign.Center
+            )
+
+            // Sample products preview (show up to 3 products)
+            if (products.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    products.take(3).forEach { product ->
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(40.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFFF5F5F5))
+                                .clickable { onProductClick(product) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (product.image.isNotEmpty()) {
+                                AsyncImage(
+                                    model = product.image,
+                                    contentDescription = product.name,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Text(
+                                    text = product.name.firstOrNull()?.toString() ?: "?",
+                                    fontSize = 12.sp,
+                                    color = TextGray
+                                )
+                            }
+                        }
+                    }
+
+                    // Add more indicator if there are more products
+                    if (products.size > 3) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(40.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Primary.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "+${products.size - 3}",
+                                fontSize = 12.sp,
+                                color = Primary,
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
@@ -175,207 +417,55 @@ fun CategoriesScreen(
     }
 }
 
+
+// Modern category header card
 @Composable
-fun CategorySection(
-    category: Category,
-    products: List<Product>,
-    onProductClick: (Product) -> Unit,
-    onCategoryClick: (Int) -> Unit,
-    onAddToCart: (Product) -> Unit
-) {
-    Column(modifier = Modifier.padding(16.dp)) {
-        // Category Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onCategoryClick(category.id) }
-                .padding(bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Category Image
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFF5F5F5)),
-                contentAlignment = Alignment.Center
-            ) {
-                if (category.image?.isNotEmpty() == true) {
-                    AsyncImage(
-                        model = category.image,
-                        contentDescription = category.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Text(
-                        text = category.name.firstOrNull()?.toString() ?: "?",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = DarkBlue
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = category.name,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF212121)
-                )
-                Text(
-                    text = "${products.size} products",
-                    fontSize = 12.sp,
-                    color = TextGray
-                )
-            }
-        }
-
-        // Products in this category
-        if (products.isNotEmpty()) {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 0.dp)
-            ) {
-                items(products) { product ->
-                    CategoryProductCard(
-                        product = product,
-                        onClick = { onProductClick(product) },
-                        onAddToCart = { onAddToCart(product) }
-                    )
-                }
-            }
-        } else {
-            // No products message
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFF5F5F5)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "No products available",
-                    color = TextGray,
-                    fontSize = 14.sp
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun CategoryProductCard(
-    product: Product,
-    onClick: () -> Unit,
-    onAddToCart: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .width(140.dp)
-            .height(180.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Product Image
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(80.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFF5F5F5)),
-                contentAlignment = Alignment.Center
-            ) {
-                if (product.image.isNotEmpty()) {
-                    AsyncImage(
-                        model = product.image,
-                        contentDescription = product.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            }
-
-            // Product Name
-            Text(
-                text = product.name,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF212121),
-                maxLines = 2,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // Product Price
-            Text(
-                text = "₹${String.format("%.2f", product.price)}",
-                fontSize = 12.sp,
-                color = DarkBlue,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Add to Cart Button
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(32.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(DarkBlue)
-                    .clickable(onClick = onAddToCart),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Add",
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
-    }
-}
-
-// Simple category header without "Hey" prefix
-@Composable
-fun CategoryHeader(
+fun CategoryHeaderCard(
     title: String,
+    subtitle: String,
     cartItemCount: Int,
     onCartClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = DarkBlue
+        )
     ) {
-        Text(
-            text = title,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.weight(1f)
-        )
-        CartIconWithBadge(
-            itemCount = cartItemCount,
-            onClick = onCartClick
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = subtitle,
+                    fontSize = 14.sp,
+                    color = Color.White.copy(alpha = 0.8f)
+                )
+            }
+            CartIconWithBadge(
+                itemCount = cartItemCount,
+                onClick = onCartClick
+            )
+        }
     }
 }
 
-// Functional search bar for categories
+// Modern search bar for categories
 @Composable
 fun CategorySearchBar(
     query: String,
@@ -383,53 +473,50 @@ fun CategorySearchBar(
     placeholder: String = "Search...",
     modifier: Modifier = Modifier
 ) {
-    Box(
+    Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .background(Color.White, RoundedCornerShape(12.dp))
+            .padding(horizontal = 24.dp),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        androidx.compose.foundation.text.BasicTextField(
+        OutlinedTextField(
             value = query,
             onValueChange = onQueryChange,
-            textStyle = androidx.compose.ui.text.TextStyle(
-                color = Color.Black,
-                fontSize = 16.sp
-            ),
-            decorationBox = { innerTextField ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Search,
-                        contentDescription = "Search",
-                        tint = Color.Gray,
-                        modifier = Modifier.padding(end = 12.dp)
-                    )
-                    Box(modifier = Modifier.weight(1f)) {
-                        if (query.isEmpty()) {
-                            Text(
-                                text = placeholder,
-                                color = Color.Gray,
-                                fontSize = 16.sp
-                            )
-                        }
-                        innerTextField()
-                    }
-                    if (query.isNotEmpty()) {
-                        IconButton(onClick = { onQueryChange("") }) {
-                            Icon(
-                                imageVector = Icons.Filled.Clear,
-                                contentDescription = "Clear search",
-                                tint = Color.Gray
-                            )
-                        }
+            placeholder = {
+                Text(
+                    text = placeholder,
+                    color = TextGray
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = TextGray
+                )
+            },
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = { onQueryChange("") }) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Clear search",
+                            tint = TextGray
+                        )
                     }
                 }
-            }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Primary,
+                unfocusedBorderColor = Color.Transparent,
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White
+            ),
+            shape = RoundedCornerShape(16.dp),
+            singleLine = true
         )
     }
 }

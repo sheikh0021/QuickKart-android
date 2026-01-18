@@ -8,15 +8,29 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.compose.ui.platform.LocalContext
+import com.application.quickkartdeliverypartner.core.network.RetrofitClient
+import com.application.quickkartdeliverypartner.core.util.PreferencesManager
+import com.application.quickkartdeliverypartner.data.mapper.DeliveryMapper
+import com.application.quickkartdeliverypartner.data.remote.api.DeliveryApi
+import com.application.quickkartdeliverypartner.data.repository.DeliveryRepositoryImpl
+import com.application.quickkartdeliverypartner.domain.usecase.DeliveryUseCase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeliveryProfileScreen(
-    navController: NavController,
-    viewModel: DeliveryDashboardViewModel = hiltViewModel()
+    navController: NavController
 ) {
+    val context = LocalContext.current
+    val preferencesManager = PreferencesManager(context)
+    RetrofitClient.init(preferencesManager)
+    val deliveryApi = RetrofitClient.getAuthenticatedClient().create(DeliveryApi::class.java)
+    val deliveryMapper = DeliveryMapper()
+    val deliveryRepository = DeliveryRepositoryImpl(deliveryApi, deliveryMapper)
+    val deliveryUseCase = DeliveryUseCase(deliveryRepository)
+    val viewModel = DeliveryDashboardViewModel(deliveryUseCase)
     val earnings by viewModel.earnings.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 

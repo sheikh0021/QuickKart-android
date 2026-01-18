@@ -6,14 +6,11 @@ import com.application.quickkartdeliverypartner.domain.model.DeliveryAssignment
 import com.application.quickkartdeliverypartner.domain.model.DeliveryEarnings
 import com.application.quickkartdeliverypartner.domain.repository.DeliveryRepository
 import com.application.quickkartdeliverypartner.domain.usecase.DeliveryUseCase
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class DeliveryDashboardViewModel @Inject constructor(
+class DeliveryDashboardViewModel(
     private val deliveryUseCase: DeliveryUseCase
 ) : ViewModel() {
     private val _assignments = MutableStateFlow<List<DeliveryAssignment>>(emptyList())

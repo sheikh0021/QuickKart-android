@@ -3,6 +3,7 @@ package com.application.quickkartcustomer.data.remote.api
 import com.application.quickkartcustomer.data.remote.dto.AddressDto
 import com.application.quickkartcustomer.data.remote.dto.AddressListResponseDto
 import com.application.quickkartcustomer.data.remote.dto.OrderDto
+import com.application.quickkartcustomer.data.remote.dto.OrderListResponseDto
 import com.application.quickkartcustomer.data.remote.dto.OrderRequestDto
 import retrofit2.Response
 import retrofit2.http.Body
@@ -15,8 +16,8 @@ interface OrderApi {
     @POST("orders/create/")
     suspend fun createOrder(@Body request: OrderRequestDto): Response<OrderDto>
 
-    @GET("orders/")
-    suspend fun getOrderHistory(): Response<List<OrderDto>>
+@GET("orders/")
+suspend fun getOrderHistory(): Response<OrderListResponseDto>
 
     @GET("orders/{orderId}/")
     suspend fun getOrderDetails(@Path("orderId") orderId: Int): Response<OrderDto>

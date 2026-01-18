@@ -2,7 +2,7 @@ package com.application.quickkartdeliverypartner
 
 import android.app.Application
 
-class QuickKartDeliveryPartnerApplication : Application() {
+class DeliveryPartnerApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
