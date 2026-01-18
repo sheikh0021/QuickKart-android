@@ -41,10 +41,16 @@ class OrderViewModel @Inject constructor(
                 onSuccess = { orders ->
                     _orders.value = orders
                     _isLoading.value = false
+                    // Debug logging
+                    println("OrderViewModel: Loaded ${orders.size} orders")
+                    orders.forEach { order ->
+                        println("OrderViewModel: Order ${order.id} - ${order.orderNumber} - ${order.status}")
+                    }
                 },
                 onFailure = {exception ->
                     _error.value = exception.message ?: "Failed to load orders"
                     _isLoading.value = false
+                    println("OrderViewModel: Failed to load orders: ${exception.message}")
                 }
             )
         }

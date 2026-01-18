@@ -34,4 +34,8 @@ class AuthUseCase @Inject constructor(
         )
         return authRepository.register(request)
     }
+
+    suspend fun updateFcmToken(token: String): Result<String> {
+        return authRepository.updateFcmToken(token)
+    }
 }

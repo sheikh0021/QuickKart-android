@@ -16,9 +16,12 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri("https://jitpack.io") }
     }
 }
 
 rootProject.name = "QuickKartCustomer"
 include(":app")
 include(":quickKartdeliverypartner")
+include(":quickkartadmin")
+

@@ -16,7 +16,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -40,8 +40,8 @@ sealed class BottomNavItem(
 ){
     object Home : BottomNavItem("home", "Home", Icons.Default.Home)
     object Categories : BottomNavItem("categories", "Categories", drawableResId = R.drawable.category)
+    object Orders : BottomNavItem("order_tracking", "Orders", Icons.Default.List)
     object Profile : BottomNavItem("profile", "Profile", Icons.Default.Person)
-    object More : BottomNavItem("more", "More", Icons.Default.MoreVert)
 }
 
 @Composable
@@ -53,8 +53,8 @@ fun QuickKartBottomNavigation(
     val items = listOf(
         BottomNavItem.Home,
         BottomNavItem.Categories,
-        BottomNavItem.Profile,
-        BottomNavItem.More
+        BottomNavItem.Orders,
+        BottomNavItem.Profile
     )
 
     Box(

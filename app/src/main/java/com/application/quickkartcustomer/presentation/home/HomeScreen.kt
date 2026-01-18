@@ -141,7 +141,7 @@ fun HomeScreen(
                                 popUpTo(Screen.Home.route) { inclusive = false }
                             }
                         }
-                        "more" -> {
+                        Screen.OrderTracking.route -> {
                             navController.navigate(Screen.OrderTracking.route) {
                                 popUpTo(Screen.Home.route) { inclusive = false }
                             }
@@ -520,24 +520,6 @@ fun StoreSection(stores: List<Store>, navController: NavController) {
                                 text = "Free delivery",
                                 fontSize = 12.sp,
                                 color = Color(0xFF4CAF50)
-                            )
-                        }
-                    }
-
-                    Column(horizontalAlignment = Alignment.End) {
-                        if (store.isActive) {
-                            Text(
-                                text = "OPEN",
-                                color = Color(0xFF4CAF50),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        } else {
-                            Text(
-                                text = "CLOSED",
-                                color = Color.Red,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
                             )
                         }
                     }

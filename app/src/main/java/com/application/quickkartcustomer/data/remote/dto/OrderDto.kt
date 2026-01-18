@@ -45,6 +45,13 @@ data class OrderItemRequestDto(
     val total: Double
 )
 
+data class OrderListResponseDto(
+    val count: Int,
+    val next: String?,
+    val previous: String?,
+    val results: List<OrderDto>
+)
+
 data class OrderDto(
     val id: Int,
     @SerializedName("customer") val customerId: Int,

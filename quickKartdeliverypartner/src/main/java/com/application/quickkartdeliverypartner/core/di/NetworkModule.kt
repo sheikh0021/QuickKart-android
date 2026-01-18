@@ -51,7 +51,8 @@ object NetworkModule {
     @Provides
     @Singleton
     @AuthenticatedRetrofit
-    fun provideAuthenticatedRetrofit(): Retrofit {
+    fun provideAuthenticatedRetrofit(preferencesManager: PreferencesManager): Retrofit {
+        RetrofitClient.init(preferencesManager)
         return RetrofitClient.getAuthenticatedClient()
     }
 

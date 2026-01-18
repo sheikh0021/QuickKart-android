@@ -41,4 +41,17 @@ class AuthRepositoryImpl(
             Result.failure(e)
         }
     }
+
+    override suspend fun updateFcmToken(token: String): Result<String> {
+        return try {
+            val response = authApi.updateFcmToken(mapOf("fcm_token" to token))
+            if (response.isSuccessful) {
+                Result.success("FCM token updated successfully")
+            } else {
+                Result.failure(Exception("Failed to update FCM token: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

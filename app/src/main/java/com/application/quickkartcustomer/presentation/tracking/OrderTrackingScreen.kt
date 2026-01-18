@@ -19,6 +19,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -32,7 +35,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -64,6 +72,22 @@ fun OrderTrackingScreen(
     val currentRoute = navBackStackEntry?.destination?.route
     val bottomNavRoute = getBottomNavRoute(currentRoute)
 
+    // Refresh orders when screen is opened
+    LaunchedEffect(Unit) {
+        println("OrderTrackingScreen: Loading orders...")
+        viewModel.loadOrders()
+    }
+
+    // Debug orders
+    LaunchedEffect(orders) {
+        println("OrderTrackingScreen: Received ${orders.size} orders")
+        val activeOrders = orders.filter { it.status !in listOf("delivered", "cancelled") }
+        println("OrderTrackingScreen: Active orders: ${activeOrders.size}")
+        activeOrders.forEach { order ->
+            println("OrderTrackingScreen: Active order ${order.id} - ${order.orderNumber} - ${order.status}")
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -85,13 +109,22 @@ fun OrderTrackingScreen(
                             tint = Color.White
                             )
                     }
+                },
+                actions = {
+                    IconButton(onClick = {viewModel.loadOrders()}) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = "Refresh",
+                            tint = Color.White
+                        )
+                    }
                 }
             )
         },
         bottomBar = {
             QuickKartBottomNavigation(
                 currentRoute = bottomNavRoute,
-                onItemClick = {route ->
+                    onItemClick = {route ->
                     when (route) {
                         Screen.Home.route -> {
                             navController.navigate(Screen.Home.route){
@@ -103,13 +136,13 @@ fun OrderTrackingScreen(
                                 popUpTo(Screen.Home.route) {inclusive = false}
                             }
                         }
+                        Screen.OrderTracking.route -> {
+                            // Already on order tracking screen
+                        }
                         Screen.Profile.route -> {
                             navController.navigate(Screen.Profile.route){
                                 popUpTo(Screen.Home.route) {inclusive = true}
                             }
-                        }
-                        "more" -> {
-                            //its there already no need to navigate now.
                         }
                     }
                 }
@@ -171,8 +204,7 @@ fun OrderTrackingScreen(
                                 color = Color(0xFF212121)
                             )
                         }
-                        items(orders.filter { it.status in listOf("confirmed", "packed",
-                            "out_for_delivery") }) {order ->
+                        items(orders.filter { it.status !in listOf("delivered", "cancelled") }) {order ->
                             OrderTrackingCard(
                                 order = order,
                                 onClick = {
@@ -201,8 +233,10 @@ fun OrderTrackingCard(
     order: com.application.quickkartcustomer.domain.model.Order,
     onClick: () -> Unit
 ){
+    var isExpanded by remember { mutableStateOf(false) }
+
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick=onClick),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
@@ -236,10 +270,12 @@ fun OrderTrackingCard(
                         order.status.replace("_", " ").uppercase(),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = when (order.status) {
+                        color = when (order.status.lowercase()) {
                             "confirmed" -> Color(0xFFFF9800)
                             "packed" -> Color(0xFF2196F3)
                             "out_for_delivery" -> Color(0xFF4CAF50)
+                            "placed" -> Color(0xFF2196F3)
+                            "delivered" -> Color(0xFF4CAF50)
                             else -> Color(0xFF757575)
                         }
                     )
@@ -272,11 +308,63 @@ fun OrderTrackingCard(
                         color = Color(0xFF212121)
                     )
                 }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "View Items",
+                        fontSize = 12.sp,
+                        color = DarkBlue,
+                        modifier = Modifier.clickable { isExpanded = !isExpanded }
+                    )
                 Icon(
-                    Icons.Default.ArrowForward,
-                    contentDescription = "View details",
-                    tint = Color(0xFF757575)
+                    if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (isExpanded) "Collapse" else "Expand",
+                    tint = DarkBlue,
+                    modifier = Modifier.clickable { isExpanded = !isExpanded }
                 )
+                }
+            }
+
+            // Expandable items section
+            if (isExpanded && order.items.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        "Ordered Items",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF212121),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    order.items.forEach { item ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    item.productName,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF212121)
+                                )
+                                Text(
+                                    "${item.quantity} × ₹${item.unitPrice}",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF757575)
+                                )
+                            }
+                            Text(
+                                "₹${item.totalPrice}",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = DarkBlue
+                            )
+                        }
+                    }
+                }
             }
         }
     }

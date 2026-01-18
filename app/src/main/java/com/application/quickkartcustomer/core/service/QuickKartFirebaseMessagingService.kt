@@ -25,8 +25,21 @@ class QuickKartFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
+        Log.d("FCM", "Received FCM message")
+        Log.d("FCM", "Notification: ${remoteMessage.notification}")
+        Log.d("FCM", "Data: ${remoteMessage.data}")
+
+        // Handle notification payload
         remoteMessage.notification?.let { notification ->
             showNotification(notification.title, notification.body)
+            return
+        }
+
+        // Handle data payload (if no notification payload)
+        if (remoteMessage.data.isNotEmpty()) {
+            val title = remoteMessage.data["title"] ?: "QuickKart"
+            val body = remoteMessage.data["body"] ?: "You have a new notification"
+            showNotification(title, body)
         }
     }
 
@@ -44,11 +57,12 @@ class QuickKartFirebaseMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val channelId = "quickkkart_channel"
+        val channelId = "quickkart_channel"
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title ?: "QuickKart")
             .setContentText(body ?: "You have a new notification")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
 
@@ -59,7 +73,7 @@ class QuickKartFirebaseMessagingService : FirebaseMessagingService() {
             val channel = NotificationChannel(
                 channelId,
                 "QuickKart Notifications",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_HIGH
             )
             notificationManager.createNotificationChannel(channel)
         }

@@ -53,6 +53,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.litert.support.api)
+    implementation(libs.firebase.messaging)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -122,6 +123,9 @@ dependencies {
     implementation ("androidx.room:room-ktx:2.4.2")
     kapt ("androidx.room:room-compiler:2.4.2")
 
+    implementation ("androidx.compose.material:material-icons-extended")
+
+
     // Work Manager
     implementation ("androidx.work:work-runtime-ktx:2.7.1")
 
@@ -133,4 +137,6 @@ dependencies {
 
     // ViewPager2
     implementation ("androidx.viewpager2:viewpager2:1.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
