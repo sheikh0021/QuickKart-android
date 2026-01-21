@@ -51,6 +51,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -60,9 +61,10 @@ import com.application.quickkartcustomer.core.util.PreferencesManager
 import com.application.quickkartcustomer.domain.model.Banner
 import com.application.quickkartcustomer.domain.model.Category
 import com.application.quickkartcustomer.presentation.cart.CartViewModel
-import com.application.quickkartcustomer.ui.components.DeliveryInfoSection
-import com.application.quickkartcustomer.ui.components.HomeHeader
+import com.application.quickkartcustomer.ui.components.EnhancedHomeHeader
+import com.application.quickkartcustomer.ui.components.EnhancedSearchBar
 import com.application.quickkartcustomer.ui.components.QuickKartBottomNavigation
+import com.application.quickkartcustomer.ui.theme.BackgroundGradient
 import com.application.quickkartcustomer.ui.theme.DarkBlue
 import com.application.quickkartcustomer.ui.theme.OrangeAccent
 import com.application.quickkartcustomer.ui.theme.Beige
@@ -113,6 +115,9 @@ fun HomeScreen(
         ?: "Green Way 3000, Sydney"
 
     Scaffold(
+        modifier = Modifier.background(
+            brush = androidx.compose.ui.graphics.Brush.verticalGradient(BackgroundGradient)
+        ),
         bottomBar = {
             // Get current route for bottom navigation highlighting
             val navHostController = navController as NavHostController
@@ -170,32 +175,42 @@ fun HomeScreen(
                 }
                 homeData != null -> {
                     LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-                        //banner
+                        //header with gradient background
                         item {
                             Column(
-                                modifier = Modifier.background(DarkBlue)
+                                modifier = Modifier.background(Brush.verticalGradient(
+                                    colors = listOf(
+                                        DarkBlue.copy(alpha = 0.95f),
+                                        DarkBlue.copy(alpha = 0.88f),
+                                        DarkBlue.copy(alpha = 0.82f)
+                                    )
+                                ))
                             ) {
-                                HomeHeader(
+                                EnhancedHomeHeader(
                                     userName = userName,
-                                    cartItemCount = cartItemCount,
-                                    onCartClick = {navController.navigate(Screen.Cart.route)}
-                                )
-                                DeliveryInfoSection(
                                     deliveryAddress = deliveryAddress,
-                                    deliveryTime = "1 Hour",
-                                    onAddressClick = {
-                                        //for this implementation pending ....
-                                    },
-                                    onTimeClick = {
-                                        //this too pending ....
+                                    deliveryItem = "Within 1 hour",
+                                    cartItemCount = cartItemCount,
+                                    onCartClick = {navController.navigate(Screen.Cart.route)},
+                                    onAddressClick = {},
+                                    onTimeClick = {}
+                                )
+                                Spacer(modifier = Modifier.height(24.dp))
+                                EnhancedSearchBar(
+                                    placeholder = "Search products or stores...",
+                                    onClick = {
+                                        homeData?.categories?.firstOrNull()?.let { category ->
+                                            navController.navigate(Screen.ProductList.createRoute(category.id))
+                                        }
                                     }
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(32.dp))
                             }
                         }
                         if (homeData!!.banners.isNotEmpty()) {
                             item {
-                                BannerSection(banners = homeData!!.banners)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                HeroBannerSection(banners = homeData!!.banners)
                             }
                         }
                         item {
@@ -212,7 +227,8 @@ fun HomeScreen(
                         //categories
                         if (homeData!!.categories.isNotEmpty()){
                             item {
-                                CategorySection(
+                                Spacer(modifier = Modifier.height(32.dp))
+                                InteractiveCategorySection(
                                     categories = homeData!!.categories,
                                     navController = navController
                                 )
@@ -221,7 +237,8 @@ fun HomeScreen(
                         //store section
                         if (homeData!!.stores.isNotEmpty()){
                             item {
-                                StoreSection(
+                                Spacer(modifier = Modifier.height(32.dp))
+                                PremiumStoreSection(
                                     stores = homeData!!.stores,
                                     navController = navController
                                 )
@@ -241,16 +258,28 @@ fun HomeScreen(
                             Column(
                                 modifier = Modifier.background(DarkBlue).fillMaxWidth()
                             ) {
-                                HomeHeader(
+                                EnhancedHomeHeader(
                                     userName = userName,
-                                    cartItemCount = cartItemCount,
-                                    onCartClick = { navController.navigate(Screen.Cart.route) }
-                                )
-                                DeliveryInfoSection(
                                     deliveryAddress = deliveryAddress,
-                                    deliveryTime = "1 Hour"
+                                    deliveryItem = "Within 1 hour",
+                                    cartItemCount = cartItemCount,
+                                    onCartClick = { navController.navigate(Screen.Cart.route) },
+                                    onAddressClick = {},
+                                    onTimeClick = {}
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
+                                EnhancedSearchBar(
+                                    placeholder = "Search products or stores...",
+                                    onClick = {
+                                        stores.firstOrNull()?.let { store ->
+                                            navController.navigate(
+                                                Screen.ProductList.createRoute(
+                                                    store.id
+                                                )
+                                            )
+                                        }
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(32.dp))
                             }
                         }
                         item { Text(
@@ -279,7 +308,6 @@ fun HomeScreen(
 fun StoreCard(
 store : Store,
 onClick: () -> Unit
-
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),

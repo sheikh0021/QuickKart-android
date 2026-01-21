@@ -57,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,19 +73,62 @@ fun OrderTrackingScreen(
     val currentRoute = navBackStackEntry?.destination?.route
     val bottomNavRoute = getBottomNavRoute(currentRoute)
 
-    // Refresh orders when screen is opened
+    // Track if this is the first load (coming from order placement)
+    var isFirstLoad by remember { mutableStateOf(true) }
+    var retryCount by remember { mutableStateOf(0) }
+    val maxRetries = 3
+
+    // Enhanced order loading with retry mechanism for new orders
     LaunchedEffect(Unit) {
-        println("OrderTrackingScreen: Loading orders...")
+        println("OrderTrackingScreen: Screen opened, loading orders...")
+        // Small delay to ensure navigation is complete and any pending order creation is processed
+        delay(500)
         viewModel.loadOrders()
+        isFirstLoad = false
+    }
+
+    // Separate effect to handle retries when orders are loaded
+    LaunchedEffect(orders, isLoading) {
+        if (isLoading) return@LaunchedEffect // Still loading, don't retry yet
+
+        if (isFirstLoad) return@LaunchedEffect // First load hasn't completed yet
+
+        val activeOrders = orders.filter { it.status.lowercase() !in listOf("delivered", "cancelled") }
+        val allOrders = orders
+
+        println("OrderTrackingScreen: Order check - Total: ${allOrders.size}, Active: ${activeOrders.size}, isLoading: $isLoading")
+
+        // If we have orders but no active orders, this might be a newly placed order
+        // that got marked as delivered or cancelled by mistake
+        if (allOrders.isNotEmpty() && activeOrders.isEmpty()) {
+            println("OrderTrackingScreen: WARNING - Found orders but no active ones!")
+            println("OrderTrackingScreen: Checking all order statuses:")
+            allOrders.forEach { order ->
+                println("OrderTrackingScreen: Order ${order.id} - ${order.orderNumber} - Status: '${order.status}'")
+                println("OrderTrackingScreen: Is active check: ${order.status !in listOf("delivered", "cancelled")}")
+            }
+        }
+
+        // More aggressive retry: if no orders at all, retry up to maxRetries times
+        if (allOrders.isEmpty() && retryCount < maxRetries && !isLoading) {
+            println("OrderTrackingScreen: No orders found, retrying... (${retryCount + 1}/${maxRetries})")
+            retryCount++
+            delay(1500) // Wait 1.5 seconds before retry (faster retries)
+            viewModel.loadOrders()
+        }
     }
 
     // Debug orders
     LaunchedEffect(orders) {
-        println("OrderTrackingScreen: Received ${orders.size} orders")
-        val activeOrders = orders.filter { it.status !in listOf("delivered", "cancelled") }
-        println("OrderTrackingScreen: Active orders: ${activeOrders.size}")
-        activeOrders.forEach { order ->
-            println("OrderTrackingScreen: Active order ${order.id} - ${order.orderNumber} - ${order.status}")
+        println("OrderTrackingScreen: Received ${orders.size} orders (sorted by latest first)")
+        val activeOrders = orders.filter { it.status.lowercase() !in listOf("delivered", "cancelled") }
+        val completedOrders = orders.filter { it.status.lowercase() in listOf("delivered", "cancelled") }
+        println("OrderTrackingScreen: Active orders: ${activeOrders.size}, Completed orders: ${completedOrders.size}")
+
+        // Log all orders for debugging
+        println("OrderTrackingScreen: All orders (latest first):")
+        orders.forEach { order ->
+            println("OrderTrackingScreen: Order ${order.id} - ${order.orderNumber} - Status: ${order.status}")
         }
     }
 
@@ -107,11 +151,14 @@ fun OrderTrackingScreen(
                             Icons.Default.ArrowBack,
                             contentDescription = "Back",
                             tint = Color.White
-                            )
+                        )
                     }
                 },
                 actions = {
-                    IconButton(onClick = {viewModel.loadOrders()}) {
+                    IconButton(onClick = {
+                        viewModel.loadOrders()
+                        retryCount = 0 // Reset retry count on manual refresh
+                    }) {
                         Icon(
                             Icons.Default.Refresh,
                             contentDescription = "Refresh",
@@ -124,7 +171,7 @@ fun OrderTrackingScreen(
         bottomBar = {
             QuickKartBottomNavigation(
                 currentRoute = bottomNavRoute,
-                    onItemClick = {route ->
+                onItemClick = {route ->
                     when (route) {
                         Screen.Home.route -> {
                             navController.navigate(Screen.Home.route){
@@ -153,10 +200,31 @@ fun OrderTrackingScreen(
             modifier = Modifier.fillMaxSize().padding(paddingValues).background(Color(0xFFF5F5F5))
         ){
             when {
-                isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                isLoading && orders.isEmpty() -> {
+                    // Show loading when first loading and no cached orders
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = DarkBlue
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "Loading your latest orders...",
+                            fontSize = 16.sp,
+                            color = Color.Gray
+                        )
+                        if (retryCount > 0) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "Checking for new orders... (${retryCount}/${maxRetries})",
+                                fontSize = 14.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
                 }
                 orders.isEmpty() -> {
                     Column(
@@ -178,9 +246,10 @@ fun OrderTrackingScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            "Your Order tracking will appear here",
+                            "Your active orders will appear here",
                             fontSize = 14.sp,
-                            color = Color.Gray
+                            color = Color.Gray,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(24.dp))
                         OutlinedButton(
@@ -191,6 +260,7 @@ fun OrderTrackingScreen(
                     }
                 }
                 else -> {
+                    // Show latest orders first (already sorted by repository)
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
@@ -198,27 +268,60 @@ fun OrderTrackingScreen(
                     ) {
                         item {
                             Text(
-                                "Active Orders",
+                                "Latest Orders",
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF212121)
                             )
                         }
-                        items(orders.filter { it.status !in listOf("delivered", "cancelled") }) {order ->
-                            OrderTrackingCard(
-                                order = order,
-                                onClick = {
-                                    navController.navigate(Screen.OrderDetail.createRoute(order.id))
+
+                        if (orders.isEmpty()) {
+                            item {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Icon(
+                                        Icons.Default.ShoppingCart,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(48.dp),
+                                        tint = Color.Gray
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text(
+                                        "No Orders Found",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.Gray
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        "Your order history will appear here",
+                                        fontSize = 14.sp,
+                                        color = Color.Gray,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    )
                                 }
-                            )
+                            }
+                        } else {
+                            // Show all orders sorted by latest first
+                            items(orders) {order ->
+                                OrderTrackingCard(
+                                    order = order,
+                                    onClick = {
+                                        navController.navigate(Screen.OrderTrackingMap.createRoute(order.id))
+                                    }
+                                )
+                            }
                         }
+
                         item {
                             Spacer(modifier = Modifier.height(16.dp))
                             OutlinedButton(
                                 onClick ={navController.navigate(Screen.OrderList.route)},
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("View All Orders")
+                                Text("View Complete Order History")
                             }
                         }
                     }
@@ -276,7 +379,7 @@ fun OrderTrackingCard(
                             "out_for_delivery" -> Color(0xFF4CAF50)
                             "placed" -> Color(0xFF2196F3)
                             "delivered" -> Color(0xFF4CAF50)
-                            else -> Color(0xFF757575)
+                            else -> Color.Gray
                         }
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -310,17 +413,19 @@ fun OrderTrackingCard(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "View Items",
+                        "Track Live",
                         fontSize = 12.sp,
                         color = DarkBlue,
-                        modifier = Modifier.clickable { isExpanded = !isExpanded }
+                        modifier = Modifier.clickable { onClick() }
                     )
-                Icon(
-                    if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = if (isExpanded) "Collapse" else "Expand",
-                    tint = DarkBlue,
-                    modifier = Modifier.clickable { isExpanded = !isExpanded }
-                )
+                    Icon(
+                        Icons.Default.ArrowForward,
+                        contentDescription = "Track Live",
+                        tint = DarkBlue,
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clickable { onClick() }
+                    )
                 }
             }
 

@@ -41,6 +41,9 @@
             </intent-filter>
         </activity>
 
+        <meta-data android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDyxHqG8kIvExJqr4w4CbhsaabU6WjPf_I"/>
+
         <!--firebase notifications -->
 <service
     android:name=".core.service.QuickKartFirebaseMessagingService"

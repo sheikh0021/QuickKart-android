@@ -17,7 +17,7 @@ interface OrderApi {
     suspend fun createOrder(@Body request: OrderRequestDto): Response<OrderDto>
 
 @GET("orders/")
-suspend fun getOrderHistory(): Response<OrderListResponseDto>
+suspend fun getOrderHistory(@retrofit2.http.Query("page") page: Int = 1): Response<OrderListResponseDto>
 
     @GET("orders/{orderId}/")
     suspend fun getOrderDetails(@Path("orderId") orderId: Int): Response<OrderDto>

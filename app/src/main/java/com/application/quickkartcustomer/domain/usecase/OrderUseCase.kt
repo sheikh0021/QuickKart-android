@@ -1,6 +1,7 @@
 package com.application.quickkartcustomer.domain.usecase
 
 import com.application.quickkartcustomer.domain.model.Address
+import com.application.quickkartcustomer.domain.model.DeliveryLocation
 import com.application.quickkartcustomer.domain.model.Order
 import com.application.quickkartcustomer.domain.model.OrderRequest
 import com.application.quickkartcustomer.domain.repository.OrderRepository
@@ -22,10 +23,14 @@ class OrderUseCase @Inject constructor(
     suspend fun getOrderDetails(orderId: Int): Result<Order>{
         return orderRepository.getOrderDetails(orderId)
     }
+    suspend fun getDeliveryLocation(orderId: Int): Result<DeliveryLocation> {
+        return orderRepository.getDeliveryLocation(orderId)
+    }
     suspend fun getAddresses(): Result<List<Address>> {
         return orderRepository.getAddresses()
     }
     suspend fun addAddress(address: Address): Result<Address> {
         return orderRepository.addAddress(address)
     }
+
 }

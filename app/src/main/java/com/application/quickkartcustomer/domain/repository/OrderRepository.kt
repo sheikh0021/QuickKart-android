@@ -3,6 +3,7 @@ package com.application.quickkartcustomer.domain.repository
 import com.application.quickkartcustomer.domain.model.Order
 import com.application.quickkartcustomer.domain.model.OrderRequest
 import com.application.quickkartcustomer.domain.model.Address
+import com.application.quickkartcustomer.domain.model.DeliveryLocation
 
 
 interface OrderRepository {
@@ -12,5 +13,7 @@ interface OrderRepository {
     suspend fun getAddresses(): Result<List<Address>>
     suspend fun addAddress(address: Address): Result<Address>
     suspend fun getOrderHistory(): Result<List<Order>>
+
+    suspend fun getDeliveryLocation(orderId: Int): Result<DeliveryLocation>
 
 }

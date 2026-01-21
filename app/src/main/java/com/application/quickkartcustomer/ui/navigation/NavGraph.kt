@@ -23,6 +23,7 @@ import com.application.quickkartcustomer.presentation.order.OrderListScreen
 import com.application.quickkartcustomer.presentation.product.ProductListScreen
 import com.application.quickkartcustomer.presentation.profile.ProfileScreen
 import androidx.compose.runtime.getValue
+import com.application.quickkartcustomer.presentation.tracking.OrderTrackingMapScreen
 import com.application.quickkartcustomer.presentation.tracking.OrderTrackingScreen
 
 
@@ -46,6 +47,9 @@ sealed class Screen(val route: String) {
     }
     object Tracking  : Screen("tracking/{orderId}") {
         fun createRoute(orderId: Int) = "tracking/$orderId"
+    }
+    object OrderTrackingMap : Screen("order_tracking_map/{orderId}"){
+        fun createRoute(orderId: Int) = "order_tracking_map/$orderId"
     }
     object OrderTracking : Screen("order_tracking")
     object Profile : Screen("profile")
@@ -134,6 +138,18 @@ fun NavGraph(navController: NavHostController){
         ) { backStackEntry ->
             val orderId = backStackEntry.arguments?.getInt("orderId") ?: 0
             OrderDetailScreen(navController, orderId)
+        }
+        composable(
+            route = Screen.OrderTrackingMap.route,
+            arguments = listOf(
+                navArgument("orderId"){type = NavType.IntType}
+            )
+        ) { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getInt("orderId") ?: 0
+            OrderTrackingMapScreen(
+                orderId = orderId,
+                onBackClick = {navController.navigateUp()}
+            )
         }
     }
 }
