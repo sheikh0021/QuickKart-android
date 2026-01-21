@@ -5,6 +5,7 @@ import com.application.quickkartcustomer.core.util.PreferencesManager
 import com.application.quickkartcustomer.data.repository.CartRepositoryImpl
 import com.application.quickkartcustomer.domain.repository.CartRepository
 import com.application.quickkartcustomer.data.remote.api.AuthApi
+import com.application.quickkartcustomer.data.remote.api.DeliveryApi
 import com.application.quickkartcustomer.data.remote.api.OrderApi
 import com.application.quickkartcustomer.data.remote.api.ProfileApi
 import com.application.quickkartcustomer.data.remote.api.StoreApi
@@ -55,6 +56,12 @@ object NetworkModule {
     @Singleton
     fun provideProfileApi(@Named("authenticated") retrofit: Retrofit): ProfileApi {
         return retrofit.create(ProfileApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDeliveryApi(@Named("authenticated") retrofit: Retrofit): DeliveryApi {
+        return retrofit.create(DeliveryApi::class.java)
     }
 
     @Provides
