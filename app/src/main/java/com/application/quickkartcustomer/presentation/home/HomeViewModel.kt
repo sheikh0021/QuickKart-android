@@ -3,6 +3,7 @@ package com.application.quickkartcustomer.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.application.quickkartcustomer.domain.model.HomeData
+import com.application.quickkartcustomer.domain.model.Product
 import com.application.quickkartcustomer.domain.model.Store
 import com.application.quickkartcustomer.domain.usecase.StoreUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,6 +28,15 @@ class HomeViewModel @Inject constructor(
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    private val _searchResults = MutableStateFlow<List<Product>>(emptyList())
+    val searchResults: StateFlow<List<Product>> = _searchResults
+
+    private val _isSearching  = MutableStateFlow(false)
+    val isSearching: StateFlow<Boolean> =_isSearching
 
     init {
         loadStores()
@@ -72,5 +82,28 @@ class HomeViewModel @Inject constructor(
                 }
             )
         }
+    }
+
+    fun searchProducts(query: String){
+        _searchQuery.value = query
+        if (query.isBlank()){
+            _searchResults.value = emptyList()
+            _isSearching.value = false
+            return
+        }
+        viewModelScope.launch {
+            _isSearching.value = true
+            kotlinx.coroutines.delay(300)
+
+            val queryLower = query.lowercase().trim()
+            val results = mutableListOf<Product>()
+            _searchResults.value = results
+            _isSearching.value  =false
+        }
+    }
+    fun clearSearch(){
+        _searchQuery.value = ""
+        _searchResults.value = emptyList()
+        _isSearching.value = false
     }
 }

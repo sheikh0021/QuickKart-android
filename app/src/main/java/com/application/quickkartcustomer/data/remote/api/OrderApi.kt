@@ -25,6 +25,9 @@ suspend fun getOrderHistory(@retrofit2.http.Query("page") page: Int = 1): Respon
     @GET("users/addresses/")
     suspend fun getAddresses(): Response<AddressListResponseDto>
 
+    @GET("orders/{orderId}/")
+    suspend fun getOrderById(@Path("orderId") orderId: Int): Response<OrderDto>
+
 
     @POST("users/addresses/")
     suspend fun addAddress(@Body address: AddressDto): Response<AddressDto>

@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,6 +35,7 @@ import com.application.quickkartcustomer.ui.navigation.Screen
 import com.application.quickkartcustomer.ui.theme.DarkBlue
 import com.application.quickkartcustomer.ui.theme.LightGray
 import com.application.quickkartcustomer.ui.theme.TextGray
+import com.google.android.gms.maps.model.LatLng
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,11 +50,47 @@ fun CheckoutScreen(
     val orderPlaced by viewModel.orderPlaced.collectAsState()
     val error by viewModel.error.collectAsState()
 
+    val selectedLocation = navController.currentBackStackEntry
+        ?.savedStateHandle
+        ?.getLiveData<LatLng>("selected_location")?.value
+
+    val selectedStreet = navController.currentBackStackEntry
+        ?.savedStateHandle
+        ?.get<String>("selected_street")
+
+    val selectedCity = navController.currentBackStackEntry
+        ?.savedStateHandle
+        ?.get<String>("selected_city")
+
+    val selectedState = navController.currentBackStackEntry
+        ?.savedStateHandle
+        ?.get<String>("selected_state")
+
+    val selectedZipCode = navController.currentBackStackEntry
+        ?.savedStateHandle
+        ?.get<String>("selected_zipcode")
+
     var showAddAddressDialog by remember { mutableStateOf(false) }
     var orderNotes by remember { mutableStateOf("") }
 
     var showSuccessDialog by remember { mutableStateOf(false) }
     var placedOrder by remember { mutableStateOf<Order?>(null) }
+
+    LaunchedEffect(selectedLocation) {
+        selectedLocation?.let { latLng ->
+            if (selectedStreet != null && selectedCity != null && selectedState != null && selectedZipCode != null) {
+                viewModel.addNewAddressWithCoordinates(
+                    street = selectedStreet,
+                    city = selectedCity,
+                    state = selectedState,
+                    zipCode = selectedZipCode,
+                    latitude = latLng.latitude,
+                    longitude = latLng.longitude
+                )
+                navController.currentBackStackEntry?.savedStateHandle?.remove<LatLng>("selected_location")
+            }
+        }
+    }
 
     // Handle order placement success
     LaunchedEffect(orderPlaced) {
@@ -87,16 +125,6 @@ fun CheckoutScreen(
             }
         },
     ) { paddingValues ->
-        if (showAddAddressDialog) {
-            AddAddressDialog(
-                onDismiss = { showAddAddressDialog = false },
-                onAddressAdded = { street, city, state, zipCode ->
-                    viewModel.addNewAddress(street, city, state, zipCode)
-                    showAddAddressDialog = false
-                }
-            )
-        }
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -117,7 +145,8 @@ fun CheckoutScreen(
                     addresses = addresses ?: emptyList(),
                     selectedAddress = selectedAddress,
                     onAddressSelected = { viewModel.selectAddress(it) },
-                    onAddAddressClick = { showAddAddressDialog = true }
+                    onAddAddressClick = { showAddAddressDialog = true },
+                    navController = navController
                 )
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -244,7 +273,8 @@ fun DeliveryAddressSection(
     addresses: List<Address>,
     selectedAddress: Address?,
     onAddressSelected: (Address) -> Unit,
-    onAddAddressClick: () -> Unit
+    onAddAddressClick: () -> Unit,
+    navController: NavController
 ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -258,8 +288,12 @@ fun DeliveryAddressSection(
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF212121)
                 )
-                TextButton(onClick = onAddAddressClick) {
-                    Text("Add New", color = DarkBlue)
+                TextButton(onClick = {navController.navigate(Screen.MapAddressPicker.route)}) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Pick on Map", color = DarkBlue)
+                    }
                 }
             }
 

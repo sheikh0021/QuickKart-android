@@ -7,10 +7,14 @@ import com.application.quickkartdeliverypartner.data.mapper.AuthMapper
 import com.application.quickkartdeliverypartner.data.mapper.DeliveryMapper
 import com.application.quickkartdeliverypartner.data.remote.api.AuthApi
 import com.application.quickkartdeliverypartner.data.remote.api.DeliveryApi
+import com.application.quickkartdeliverypartner.data.remote.api.ChatApi
 import com.application.quickkartdeliverypartner.data.repository.AuthRepositoryImpl
 import com.application.quickkartdeliverypartner.data.repository.DeliveryRepositoryImpl
 import com.application.quickkartdeliverypartner.domain.repository.AuthRepository
 import com.application.quickkartdeliverypartner.domain.repository.DeliveryRepository
+import com.application.quickkartdeliverypartner.domain.repository.ChatRepository
+import com.application.quickkartdeliverypartner.data.repository.ChatRepositoryImpl
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -70,6 +74,12 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideChatApi(@AuthenticatedRetrofit authenticatedRetrofit: Retrofit): ChatApi {
+        return authenticatedRetrofit.create(ChatApi::class.java)
+    }
+
+    @Provides
+    @Singleton
     fun provideAuthRepository(
         authApi: AuthApi,
         authMapper: AuthMapper
@@ -96,6 +106,12 @@ object NetworkModule {
     @Singleton
     fun provideDeliveryMapper(): DeliveryMapper{
         return DeliveryMapper()
+    }
+
+    @Provides
+    @Singleton
+    fun provideChatRepository(chatApi: ChatApi): ChatRepository {
+        return ChatRepositoryImpl(chatApi)
     }
 
 }

@@ -13,6 +13,8 @@ class DeliveryMapper {
             orderStatus = dto.orderDetails.status,
             totalAmount = dto.orderDetails.totalAmount,
             deliveryAddress = dto.orderDetails.deliveryAddress,
+            deliveryLatitude = dto.orderDetails.deliveryLatitude,
+            deliveryLongitude = dto.orderDetails.deliveryLongitude,
             customerName = dto.customerDetails.name,
             customerPhone = dto.customerDetails.phone,
             assignedAt = dto.assignedAt,

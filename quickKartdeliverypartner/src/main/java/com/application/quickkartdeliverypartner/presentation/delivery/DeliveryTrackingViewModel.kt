@@ -11,8 +11,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-
-class DeliveryTrackingViewModel(
+@HiltViewModel
+class DeliveryTrackingViewModel @Inject constructor(
     private val deliveryUseCase: DeliveryUseCase
 ): ViewModel() {
 

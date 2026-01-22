@@ -22,8 +22,12 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.application.quickkartcustomer.domain.model.Store
 import com.application.quickkartcustomer.ui.navigation.Screen
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.indication
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.tween
 
 @Composable
 fun PremiumStoreSection(
@@ -53,28 +57,46 @@ fun PremiumStoreSection(
 }
 
 @Composable
+@Suppress("DEPRECATION")
 fun PremiumStoreCard(
     store: Store,
     onClick: () -> Unit
 ) {
-    var isPressed by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f)
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "store_scale"
+    )
+
+    val elevation by animateFloatAsState(
+        targetValue = if (isPressed) 4f else 8f,
+        animationSpec = tween(200),
+        label = "store_elevation"
     )
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(100.dp)
-            .scale(scale)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .shadow(
-                elevation = if (isPressed) 4.dp else 8.dp,
+                elevation = elevation.dp,
                 shape = RoundedCornerShape(20.dp),
                 spotColor = Color.Black.copy(alpha = 0.08f)
             )
-            .clickable(onClick = onClick),
+            .clickable(
+                interactionSource = interactionSource,
+                onClick = onClick
+            ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)

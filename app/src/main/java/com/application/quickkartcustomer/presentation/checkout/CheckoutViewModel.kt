@@ -152,4 +152,35 @@ class CheckoutViewModel @Inject constructor(
             )
         }
     }
+
+    fun addNewAddressWithCoordinates(
+        street: String,
+        city: String,
+        state: String,
+        zipCode: String,
+        latitude: Double,
+        longitude: Double
+    ){
+        viewModelScope.launch {
+            val newAddress = Address(
+                street = street,
+                city = city,
+                state = state,
+                zipCode = zipCode,
+                latitude = latitude,
+                longitude = longitude,
+                isDefault = _addresses.value?.isEmpty() == true
+            )
+            orderUseCase.addAddress(newAddress).fold(
+                onSuccess = {addedAddress ->
+                    val currentAddresses = _addresses.value ?: emptyList()
+                    _addresses.value = currentAddresses + addedAddress
+                    _selectedAddress.value = addedAddress
+                },
+                onFailure = {exception ->
+                    _error.value = "Failed to add address: ${exception.message}"
+                }
+            )
+        }
+    }
 }

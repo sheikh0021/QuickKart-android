@@ -5,6 +5,7 @@ import com.application.quickkartcustomer.domain.model.DeliveryLocation
 import com.application.quickkartcustomer.domain.model.Order
 import com.application.quickkartcustomer.domain.model.OrderRequest
 import com.application.quickkartcustomer.domain.repository.OrderRepository
+import com.google.android.gms.maps.model.LatLng
 import javax.inject.Inject
 
 
@@ -31,6 +32,11 @@ class OrderUseCase @Inject constructor(
     }
     suspend fun addAddress(address: Address): Result<Address> {
         return orderRepository.addAddress(address)
+    }
+
+    suspend fun getOrderById(orderId: Int): Result<Order> {
+        return orderRepository.getOrderById(orderId)
+
     }
 
 }

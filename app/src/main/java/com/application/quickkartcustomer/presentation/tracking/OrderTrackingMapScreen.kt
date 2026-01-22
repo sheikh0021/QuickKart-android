@@ -5,24 +5,37 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.DirectionsBike
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.core.content.ContextCompat
+import android.content.Intent
+import android.net.Uri
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.application.quickkartcustomer.ui.components.DeliveryTimeline
+import com.application.quickkartcustomer.ui.components.MapMarkerUtils
 import com.application.quickkartcustomer.ui.theme.DarkBlue
+import com.application.quickkartcustomer.ui.theme.Surface
+import com.application.quickkartcustomer.ui.theme.Primary
+import com.application.quickkartcustomer.ui.navigation.Screen
+import androidx.navigation.NavController
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.*
 import com.google.maps.android.compose.*
@@ -32,12 +45,29 @@ import com.google.maps.android.compose.*
 fun OrderTrackingMapScreen(
     orderId: Int,
     onBackClick: () -> Unit,
+    navController: NavController? = null,
     viewModel: OrderTrackingViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val deliveryLocation by viewModel.deliveryLocation.collectAsState()
+    val route by viewModel.route.collectAsState()
+    val animatedLocation by viewModel.animatedLocation.collectAsState()
+    val trackingPhase by viewModel.trackingPhase.collectAsState()
     val isTracking by viewModel.isTracking.collectAsState()
+    val lastUpdateTime by viewModel.lastUpdateTime.collectAsState()
     val error by viewModel.error.collectAsState()
+
+    // ✅ Get REAL customer location from ViewModel state (loaded from order)
+    val customerLocation by viewModel.customerLocation.collectAsState()
+    val storeLocation by viewModel.storeLocation.collectAsState()
+
+    // Camera position state - use default location if customerLocation is null
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(
+            customerLocation ?: LatLng(21.6139, 77.2090), // Default location
+            14f
+        )
+    }
 
     // Location permission launcher
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -48,7 +78,7 @@ fun OrderTrackingMapScreen(
         }
     }
 
-    // Check location permission and start tracking
+    // Check permission and start tracking
     LaunchedEffect(Unit) {
         val hasPermission = ContextCompat.checkSelfPermission(
             context,
@@ -62,7 +92,19 @@ fun OrderTrackingMapScreen(
         }
     }
 
-    // Cleanup tracking when leaving screen
+    // Auto-follow delivery partner
+    LaunchedEffect(animatedLocation) {
+        animatedLocation?.currentPosition?.let { position ->
+            if (deliveryLocation?.assignmentStatus?.outForDelivery == true) {
+                cameraPositionState.animate(
+                    CameraUpdateFactory.newLatLngZoom(position, 15f),
+                    durationMs = 1000
+                )
+            }
+        }
+    }
+
+    // Cleanup
     DisposableEffect(Unit) {
         onDispose {
             viewModel.stopLiveTracking()
@@ -71,46 +113,111 @@ fun OrderTrackingMapScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = deliveryLocation?.let { location ->
-                            when {
-                                location.assignmentStatus.delivered -> "Order Delivered"
-                                location.assignmentStatus.outForDelivery -> "Live Tracking"
-                                else -> "Order Tracking"
+            // Green header matching image style
+            Surface(
+                color = Color(0xFF4CAF50), // Green background like image
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column {
+                    // Status bar spacing
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Back button
+                        IconButton(
+                            onClick = onBackClick,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        // Status text and ETA
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = when {
+                                    deliveryLocation?.assignmentStatus?.delivered == true -> "Order Delivered"
+                                    deliveryLocation?.assignmentStatus?.outForDelivery == true -> "Order is on the way"
+                                    deliveryLocation?.assignmentStatus?.pickedUp == true -> "Order is on the way"
+                                    else -> "Order Tracking"
+                                },
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Normal
+                            )
+                            
+                            // ETA (only show when out for delivery)
+                            val etaMinutes = route?.etaMinutes ?: 0
+                            if (deliveryLocation?.assignmentStatus?.outForDelivery == true && etaMinutes > 0) {
+                                Text(
+                                    text = "Arriving in $etaMinutes ${if (etaMinutes == 1) "minute" else "minutes"}",
+                                    color = Color.White,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
-                        } ?: "Order Tracking",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DarkBlue,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
-                ),
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        androidx.compose.material3.Icon(
-                            androidx.compose.material.icons.Icons.Default.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                        }
+                        
+                        // Recenter button
+                        IconButton(
+                            onClick = {
+                                val target: LatLng = animatedLocation?.currentPosition 
+                                    ?: customerLocation 
+                                    ?: LatLng(21.6139, 77.2090)
+                                cameraPositionState.move(
+                                    CameraUpdateFactory.newLatLngZoom(target, 15f)
+                                )
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.MyLocation,
+                                contentDescription = "Recenter",
+                                tint = Color.White
+                            )
+                        }
                     }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.refreshLocation() }) {
-                        androidx.compose.material3.Icon(
-                            androidx.compose.material.icons.Icons.Default.Refresh,
-                            contentDescription = "Refresh"
-                        )
-                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
-            )
+            }
         }
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
+            // ETA is now in the header, so remove duplicate banner
+            
+            // Real-time polling indicator (Step 2.3)
+            lastUpdateTime?.let { updateTime ->
+                val secondsAgo = (System.currentTimeMillis() - updateTime) / 1000
+                if (secondsAgo < 10) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp),
+                        color = Color(0xFF4CAF50).copy(alpha = 0.9f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "● Live",
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+            
             if (error != null) {
+                // Error State
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -128,136 +235,168 @@ fun OrderTrackingMapScreen(
                         Text("Retry")
                     }
                 }
+            } else if (deliveryLocation == null) {
+                // Loading State
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center)
+                )
             } else {
+                // Map with Tracking
+                LiveTrackingMap(
+                    deliveryLocation = deliveryLocation!!,
+                    route = route,
+                    animatedLocation = animatedLocation,
+                    customerLocation = customerLocation,
+                    cameraPositionState = cameraPositionState,
+                    storeLocation = storeLocation
+                )
+
+                // Delivery Partner Info Card (Matches Image Style)
                 deliveryLocation?.let { location ->
-                    DeliveryMapContent(location)
-                } ?: run {
-                    // Loading state
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
+                    location.deliveryPartner?.let { partner ->
+                        Card(
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(16.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFFF5F5F5) // Light grey like image
+                            )
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // Yellow avatar (circle with person icon) - matches image
+                                    Surface(
+                                        modifier = Modifier.size(50.dp),
+                                        shape = androidx.compose.foundation.shape.CircleShape,
+                                        color = Color(0xFFFFEB3B) // Yellow
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                Icons.Default.Person,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(30.dp),
+                                                tint = Color.White
+                                            )
+                                        }
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "I'm ${partner.name}, your delivery partner",
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = Color(0xFF212121)
+                                        )
+                                    }
+                                    
+                                    // Call Button (green circle)
+                                    Surface(
+                                        modifier = Modifier.size(40.dp),
+                                        shape = androidx.compose.foundation.shape.CircleShape,
+                                        color = Color(0xFF4CAF50) // Green
+                                    ) {
+                                        IconButton(
+                                            onClick = {
+                                                val intent = Intent(Intent.ACTION_DIAL).apply {
+                                                    data = Uri.parse("tel:${partner.phone}")
+                                                }
+                                                context.startActivity(intent)
+                                            }
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Phone,
+                                                contentDescription = "Call",
+                                                tint = Color.White,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                                
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                // Green status strip (matches image)
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = Color(0xFFE8F5E9), // Light green background
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        text = when {
+                                            location.assignmentStatus.delivered -> "Order has been delivered"
+                                            location.assignmentStatus.outForDelivery -> "I have picked up your order, and I am on the way to your location"
+                                            location.assignmentStatus.pickedUp -> "I have picked up your order"
+                                            else -> "Preparing your order"
+                                        },
+                                        modifier = Modifier.padding(12.dp),
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF2E7D32) // Dark green text
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Bottom Timeline Card
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp)
+                ) {
+                    DeliveryTimeline(
+                        status = deliveryLocation!!.assignmentStatus,
+                        etaMinutes = route?.etaMinutes,
+                        deliveryPartnerName = deliveryLocation!!.deliveryPartner.name
                     )
+                }
+
+                // Chat Button - Show when delivery partner is assigned
+                deliveryLocation?.deliveryPartner?.let { partner ->
+                    if (navController != null) {
+                        FloatingActionButton(
+                            onClick = {
+                                navController.currentBackStackEntry?.savedStateHandle?.set(
+                                    "deliveryPartnerName",
+                                    partner.name
+                                )
+                                navController.navigate(Screen.Chat.createRoute(orderId))
+                            },
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(16.dp),
+                            containerColor = Primary,
+                            contentColor = Color.White
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Chat,
+                                contentDescription = "Chat with delivery partner",
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
+
     }
 }
 
 @Composable
-private fun DeliveryMapContent(deliveryLocation: com.application.quickkartcustomer.domain.model.DeliveryLocation) {
-    val assignmentStatus = deliveryLocation.assignmentStatus
-
-    when {
-        // PHASE 1: ORDER BEING PACKED
-        !assignmentStatus.pickedUp && !assignmentStatus.outForDelivery && !assignmentStatus.delivered -> {
-            PackingPhaseMap(deliveryLocation)
-        }
-
-        // PHASE 2: OUT FOR DELIVERY (Live Tracking)
-        assignmentStatus.outForDelivery && !assignmentStatus.delivered -> {
-            DeliveryPhaseMap(deliveryLocation)
-        }
-
-        // PHASE 3: ORDER DELIVERED
-        assignmentStatus.delivered -> {
-            DeliveredPhaseMap(deliveryLocation)
-        }
-    }
-}
-
-@Composable
-private fun PackingPhaseMap(deliveryLocation: com.application.quickkartcustomer.domain.model.DeliveryLocation) {
-    // Default customer location (should be passed from order data)
-    val customerLocation = LatLng(28.6139, 77.2090) // Replace with actual customer address coordinates
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(customerLocation, 15f)
-    }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        GoogleMap(
-            modifier = Modifier.fillMaxSize(),
-            cameraPositionState = cameraPositionState,
-            properties = MapProperties(
-                isMyLocationEnabled = true,
-                mapType = MapType.NORMAL
-            ),
-            uiSettings = MapUiSettings(
-                zoomControlsEnabled = true,
-                myLocationButtonEnabled = true
-            )
-        ) {
-            // Only show customer delivery address during packing
-            Marker(
-                state = MarkerState(position = customerLocation),
-                title = "Delivery Address",
-                snippet = "Your order will be delivered here",
-                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
-            )
-        }
-
-        // Packing progress overlay
-        Card(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(16.dp)
-                .fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                androidx.compose.material3.Icon(
-                    androidx.compose.material.icons.Icons.Default.ShoppingCart,
-                    contentDescription = null,
-                    tint = Color(0xFFFF9800),
-                    modifier = Modifier.size(48.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Order is being prepared",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Our team is packing your items carefully",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFFFF9800)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Estimated preparation time: 15-20 minutes",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DeliveryPhaseMap(deliveryLocation: com.application.quickkartcustomer.domain.model.DeliveryLocation) {
-    val deliveryPartnerLocation = deliveryLocation.location
-    val customerLocation = LatLng(28.6139, 77.2090) // Replace with actual customer address coordinates
-    val cameraPositionState = rememberCameraPositionState()
-
-    // Update camera to follow delivery partner
-    LaunchedEffect(deliveryPartnerLocation) {
-        val targetLocation = deliveryPartnerLocation?.let {
-            LatLng(it.latitude, it.longitude)
-        } ?: customerLocation
-
-        cameraPositionState.animate(
-            CameraUpdateFactory.newLatLngZoom(targetLocation, 15f),
-            1000
-        )
-    }
+private fun LiveTrackingMap(
+    deliveryLocation: com.application.quickkartcustomer.domain.model.DeliveryLocation,
+    route: com.application.quickkartcustomer.domain.model.DeliveryRoute?,
+    animatedLocation: com.application.quickkartcustomer.domain.model.AnimatedLocation?,
+    customerLocation: LatLng?,
+    cameraPositionState: CameraPositionState,
+    storeLocation: LatLng? = null
+) {
+    val context = LocalContext.current
 
     GoogleMap(
         modifier = Modifier.fillMaxSize(),
@@ -267,146 +406,60 @@ private fun DeliveryPhaseMap(deliveryLocation: com.application.quickkartcustomer
             mapType = MapType.NORMAL
         ),
         uiSettings = MapUiSettings(
-            zoomControlsEnabled = true,
-            myLocationButtonEnabled = true
+            zoomControlsEnabled = false,
+            myLocationButtonEnabled = false,
+            compassEnabled = true
         )
     ) {
-        // Customer delivery address marker
-        Marker(
-            state = MarkerState(position = customerLocation),
-            title = "Delivery Address",
-            snippet = "Your order will be delivered here",
-            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
-        )
 
-        // Delivery partner location marker
-        deliveryPartnerLocation?.let { location ->
+        // Route polyline (blue line) - Z-Index 1
+        route?.polylinePoints?.let { points ->
+            Polyline(
+                points = points,
+                color = Color(0xFF2196F3), // Blue
+                width = 12f,
+                geodesic = true,
+                zIndex = 1f
+            )
+        }
+
+        // 1. Store/Pickup Marker (Black circle with green building) - Z-Index 2
+        storeLocation?.let { location ->
             Marker(
-                state = MarkerState(
-                    position = LatLng(location.latitude, location.longitude)
-                ),
-                title = "Delivery Partner",
-                snippet = "${deliveryLocation.deliveryPartner.name} is on the way",
-                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                state = MarkerState(position = location),
+                title = "Store",
+                snippet = "Order pickup location",
+                icon = MapMarkerUtils.createStoreIcon(context),
+                zIndex = 2f
             )
         }
-    }
 
-    // Live tracking overlay
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.BottomCenter
-    ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Delivery Partner En Route",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4CAF50)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text(
-                            text = "Partner: ${deliveryLocation.deliveryPartner.name}",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = "Phone: ${deliveryLocation.deliveryPartner.phone}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
-                        )
-                    }
-                    androidx.compose.material3.Icon(
-                        androidx.compose.material.icons.Icons.Default.DirectionsBike,
-                        contentDescription = null,
-                        tint = Color(0xFF4CAF50),
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DeliveredPhaseMap(deliveryLocation: com.application.quickkartcustomer.domain.model.DeliveryLocation) {
-    val customerLocation = LatLng(28.6139, 77.2090) // Replace with actual customer address coordinates
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(customerLocation, 15f)
-    }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        GoogleMap(
-            modifier = Modifier.fillMaxSize(),
-            cameraPositionState = cameraPositionState,
-            properties = MapProperties(
-                isMyLocationEnabled = true,
-                mapType = MapType.NORMAL
-            ),
-            uiSettings = MapUiSettings(
-                zoomControlsEnabled = true,
-                myLocationButtonEnabled = true
-            )
-        ) {
-            // Customer delivery address with green marker for successful delivery
+        // 2. Customer Destination Marker (Blue pin with yellow bullseye) - Z-Index 3
+        customerLocation?.let { location ->
             Marker(
-                state = MarkerState(position = customerLocation),
-                title = "Order Delivered Successfully!",
-                snippet = "Your order has been delivered to this address",
-                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)
+                state = MarkerState(position = location),
+                title = "Delivery Address",
+                snippet = "Your order will be delivered here",
+                icon = MapMarkerUtils.createCustomerHomeIcon(context),
+                zIndex = 3f
             )
         }
 
-        // Delivery completion overlay
-        Card(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(16.dp)
-                .fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                androidx.compose.material3.Icon(
-                    androidx.compose.material.icons.Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = Color(0xFF4CAF50),
-                    modifier = Modifier.size(48.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Order Delivered Successfully!",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4CAF50)
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Thank you for choosing QuickKart",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Delivered by: ${deliveryLocation.deliveryPartner.name}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+        // 3. Delivery Partner Marker (Yellow person on green motorcycle) - Z-Index 4
+        animatedLocation?.currentPosition?.let { position ->
+            if (deliveryLocation.assignmentStatus.outForDelivery) {
+                Marker(
+                    state = MarkerState(position = position),
+                    title = deliveryLocation.deliveryPartner.name,
+                    snippet = "On the way",
+                    icon = MapMarkerUtils.createDeliveryBikeIcon(
+                        context,
+                        bearing = animatedLocation.bearing
+                    ),
+                    anchor = Offset(0.5f, 0.5f), // Center the marker
+                    flat = true, // Makes marker rotate with map
+                    rotation = animatedLocation.bearing,
+                    zIndex = 4f
                 )
             }
         }

@@ -9,6 +9,8 @@ data class AddressDto(
     val city: String,
     val state: String,
     @SerializedName("zip_code") val zipCode: String,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     @SerializedName("is_default") val isDefault: Boolean = false
 )
 

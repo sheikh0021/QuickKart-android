@@ -25,7 +25,9 @@ data class OrderDetailsDto(
     @SerializedName("order_number") val orderNumber: String,
     @SerializedName("status") val status: String,
     @SerializedName("total_amount") val totalAmount: Double,
-    @SerializedName("delivery_address") val deliveryAddress: String
+    @SerializedName("delivery_address") val deliveryAddress: String,
+    @SerializedName("delivery_latitude") val deliveryLatitude: Double? = null,
+    @SerializedName("delivery_longitude") val deliveryLongitude: Double? = null
 )
 
 data class CustomerDetailsDto(

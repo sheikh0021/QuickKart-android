@@ -23,10 +23,28 @@ import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.application.quickkartcustomer.domain.model.Banner
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
 
 @Composable
 fun HeroBannerSection(banners: List<Banner>) {
+    val listState = rememberLazyListState()
+    
+    // Auto-scroll functionality
+    LaunchedEffect(banners.size) {
+        if (banners.isNotEmpty()) {
+            while (true) {
+                delay(3000) // Auto-scroll every 3 seconds
+                val currentIndex = listState.firstVisibleItemIndex
+                val nextIndex = (currentIndex + 1) % banners.size
+                listState.animateScrollToItem(nextIndex)
+            }
+        }
+    }
+    
     LazyRow(
+        state = listState,
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(20.dp),
         contentPadding = PaddingValues(horizontal = 20.dp)

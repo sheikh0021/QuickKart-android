@@ -21,12 +21,14 @@ import com.application.quickkartcustomer.domain.repository.OrderRepository
 import com.application.quickkartcustomer.domain.repository.ProductRepository
 import com.application.quickkartcustomer.domain.repository.ProfileRepository
 import com.application.quickkartcustomer.domain.repository.StoreRepository
+import com.application.quickkartcustomer.domain.repository.ChatRepository
 import com.application.quickkartcustomer.domain.usecase.AuthUseCase
 import com.application.quickkartcustomer.domain.usecase.CartUseCase
 import com.application.quickkartcustomer.domain.usecase.OrderUseCase
 import com.application.quickkartcustomer.domain.usecase.ProductUseCase
 import com.application.quickkartcustomer.domain.usecase.ProfileUseCase
 import com.application.quickkartcustomer.domain.usecase.StoreUseCase
+import com.application.quickkartcustomer.domain.usecase.ChatUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -107,5 +109,9 @@ object ViewModelModule {
     @Provides
     fun provideProfileUseCase(profileRepository: ProfileRepository): ProfileUseCase =
         ProfileUseCase(profileRepository)
+
+    @Provides
+    fun provideChatUseCase(chatRepository: ChatRepository): ChatUseCase = 
+        ChatUseCase(chatRepository)
 
 }

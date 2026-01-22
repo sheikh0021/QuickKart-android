@@ -29,10 +29,40 @@ class FirebaseMessageService : FirebaseMessagingService() {
         Log.d("FCM", "Data: ${remotemessage.data}")
 
         val data = remotemessage.data
+        if (data.isNotEmpty() && data["type"] == "chat_message") {
+            handleChatMessage(data)
+            return
+        }
+
         val title = remotemessage.notification?.title ?: "New Notification"
         val body = remotemessage.notification?.body ?: ""
-
         showNotification(title, body, data)
+    }
+
+    private fun handleChatMessage(data: Map<String, String>) {
+        try {
+            val roomId = data["room_id"]?.toIntOrNull() ?: return
+            val id = data["id"]?.toIntOrNull() ?: return
+            val senderId = data["sender_id"]?.toIntOrNull() ?: return
+            val senderName = data["sender_name"] ?: return
+            val senderType = data["sender_type"] ?: return
+            val message = data["message"] ?: return
+            val isRead = data["is_read"]?.toBooleanStrictOrNull() ?: false
+            val createdAt = data["created_at"] ?: return
+            val msg = com.application.quickkartdeliverypartner.domain.model.ChatMessage(
+                id = id,
+                roomId = roomId,
+                senderId = senderId,
+                senderName = senderName,
+                senderType = senderType,
+                message = message,
+                isRead = isRead,
+                createdAt = createdAt
+            )
+            com.application.quickkartdeliverypartner.core.chat.ChatMessageNotifier.onNewMessage(msg)
+        } catch (e: Exception) {
+            Log.e("FCM", "Error parsing chat message: ${e.message}")
+        }
     }
 
     override fun onNewToken(token: String) {

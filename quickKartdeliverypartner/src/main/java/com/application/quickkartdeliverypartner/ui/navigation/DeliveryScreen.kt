@@ -10,4 +10,10 @@ sealed class DeliveryScreen(val route: String) {
     object Tracking: DeliveryScreen("delivery_tracking/{orderId}") {
         fun createRoute(orderId: Int) = "delivery_tracking/$orderId"
     }
+    object TrackingMap: DeliveryScreen("delivery_tracking_map/{orderId}") {
+        fun createRoute(orderId: Int) = "delivery_tracking_map/$orderId"
+    }
+    object Chat: DeliveryScreen("delivery_chat/{orderId}") {
+        fun createRoute(orderId: Int) = "delivery_chat/$orderId"
+    }
 }

@@ -1,6 +1,9 @@
 package com.application.quickkartdeliverypartner.domain.model
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 
+@Parcelize
 data class DeliveryAssignment(
     val id: Int,
     val orderId: Int,
@@ -8,13 +11,15 @@ data class DeliveryAssignment(
     val orderStatus: String,
     val totalAmount: Double,
     val deliveryAddress: String,
+    val deliveryLatitude: Double? = null,
+    val deliveryLongitude: Double? = null,
     val customerName: String,
     val customerPhone: String,
     val assignedAt: String,
     val pickedUpAt: String? = null,
     val deliveredAt: String? = null,
     val estimatedDeliveryTime: String? = null
-)
+) : Parcelable
 
 data class DeliveryEarnings(
     val today: Double = 0.0,

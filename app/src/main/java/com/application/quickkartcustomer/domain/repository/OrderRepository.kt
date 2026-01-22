@@ -16,4 +16,6 @@ interface OrderRepository {
 
     suspend fun getDeliveryLocation(orderId: Int): Result<DeliveryLocation>
 
+    suspend fun getOrderById(orderId: Int): Result<Order>
+
 }
