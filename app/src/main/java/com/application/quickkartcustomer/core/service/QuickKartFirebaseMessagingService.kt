@@ -37,9 +37,40 @@ class QuickKartFirebaseMessagingService : FirebaseMessagingService() {
 
         // Handle data payload (if no notification payload)
         if (remoteMessage.data.isNotEmpty()) {
+            val type = remoteMessage.data["type"]
+            if (type == "chat_message") {
+                handleChatMessage(remoteMessage.data)
+                return
+            }
             val title = remoteMessage.data["title"] ?: "QuickKart"
             val body = remoteMessage.data["body"] ?: "You have a new notification"
             showNotification(title, body)
+        }
+    }
+
+    private fun handleChatMessage(data: Map<String, String>) {
+        try {
+            val roomId = data["room_id"]?.toIntOrNull() ?: return
+            val id = data["id"]?.toIntOrNull() ?: return
+            val senderId = data["sender_id"]?.toIntOrNull() ?: return
+            val senderName = data["sender_name"] ?: return
+            val senderType = data["sender_type"] ?: return
+            val message = data["message"] ?: return
+            val isRead = data["is_read"]?.toBooleanStrictOrNull() ?: false
+            val createdAt = data["created_at"] ?: return
+            val msg = com.application.quickkartcustomer.domain.model.ChatMessage(
+                id = id,
+                roomId = roomId,
+                senderId = senderId,
+                senderName = senderName,
+                senderType = senderType,
+                message = message,
+                isRead = isRead,
+                createdAt = createdAt
+            )
+            com.application.quickkartcustomer.core.chat.ChatMessageNotifier.onNewMessage(msg)
+        } catch (e: Exception) {
+            android.util.Log.e("FCM", "Error parsing chat message: ${e.message}")
         }
     }
 

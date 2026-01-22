@@ -44,4 +44,8 @@ class PreferencesManager(context: Context) {
         val token = getToken()
         return !token.isNullOrEmpty() && token.length >10
     }
+    
+    fun getAccessToken(): String? {
+        return getToken()
+    }
  }

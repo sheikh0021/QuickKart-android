@@ -203,5 +203,19 @@ class OrderRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getOrderById(orderId: Int): Result<Order> {
+        return try {
+            val response = orderApi.getOrderById(orderId)
+
+            if (response.isSuccessful && response.body() != null){
+                Result.success(orderMapper.mapOrderToDomain(response.body()!!))
+            } else {
+                Result.failure(Exception("Order not found"))
+            }
+        } catch (e: Exception){
+            Result.failure(e)
+        }
+    }
+
 
 }

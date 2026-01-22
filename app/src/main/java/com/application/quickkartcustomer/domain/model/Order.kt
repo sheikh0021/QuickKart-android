@@ -30,16 +30,22 @@ data class Order(
     val createdAt: String
 )
 
+
+
 data class Address(
     val id: Int? = null,
     val street: String,
     val city: String,
     val state: String,
     val zipCode: String,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val isDefault: Boolean = false
 ) {
     val fullAddress: String
         get() = "$street, $city, $state - $zipCode "
+    val hasCoordinates: Boolean
+        get() = latitude != null && longitude != null
 }
 
 data class OrderRequest(

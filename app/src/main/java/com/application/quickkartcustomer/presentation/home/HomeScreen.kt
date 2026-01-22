@@ -1,8 +1,14 @@
 package com.application.quickkartcustomer.presentation.home
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,30 +46,47 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.application.quickkartcustomer.ui.navigation.Screen
 import com.application.quickkartcustomer.ui.navigation.getBottomNavRoute
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.application.quickkartcustomer.domain.model.Store
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.application.quickkartcustomer.core.util.PreferencesManager
 import com.application.quickkartcustomer.domain.model.Banner
 import com.application.quickkartcustomer.domain.model.Category
+import com.application.quickkartcustomer.domain.model.HomeData
+import com.application.quickkartcustomer.domain.model.Product
 import com.application.quickkartcustomer.presentation.cart.CartViewModel
 import com.application.quickkartcustomer.ui.components.EnhancedHomeHeader
 import com.application.quickkartcustomer.ui.components.EnhancedSearchBar
 import com.application.quickkartcustomer.ui.components.QuickKartBottomNavigation
+import com.application.quickkartcustomer.ui.components.ShimmerStoreCard
 import com.application.quickkartcustomer.ui.theme.BackgroundGradient
 import com.application.quickkartcustomer.ui.theme.DarkBlue
 import com.application.quickkartcustomer.ui.theme.OrangeAccent
@@ -77,6 +100,10 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     cartViewModel: CartViewModel = hiltViewModel()
 ) {
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsState()
+    val isSearching by viewModel.isSearching.collectAsState()
+    var showSearchResults by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context)}
     val user = preferencesManager.getUser()
@@ -159,7 +186,17 @@ fun HomeScreen(
         Box(modifier = Modifier.fillMaxSize()){
             when {
                 isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(paddingValues),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        item { ShimmerStoreCard() }
+                        item { ShimmerStoreCard() }
+                        item { ShimmerStoreCard() }
+                        item { ShimmerStoreCard() }
+                        item { ShimmerStoreCard() }
+                    }
                 }
                 error != null -> {
                     Column(
@@ -199,10 +236,22 @@ fun HomeScreen(
                                 EnhancedSearchBar(
                                     placeholder = "Search products or stores...",
                                     onClick = {
-                                        homeData?.categories?.firstOrNull()?.let { category ->
-                                            navController.navigate(Screen.ProductList.createRoute(category.id))
+                                        showSearchResults = true
+                                    },
+                                    searchQuery = searchQuery,
+                                    onSearchQueryChange = {query ->
+                                        if (query.isNotEmpty()){
+                                            viewModel.searchProducts(query)
+                                            showSearchResults = true
+                                        } else {
+                                            viewModel.clearSearch()
                                         }
-                                    }
+                                    },
+                                    onSearch = {query ->
+                                        viewModel.searchProducts(query)
+                                        showSearchResults= true
+                                    },
+                                    isSearching = isSearching
                                 )
                                 Spacer(modifier = Modifier.height(32.dp))
                             }
@@ -301,17 +350,433 @@ fun HomeScreen(
             }
         }
     }
+    if (showSearchResults){
+        SearchResultsSheet(
+            searchQuery = searchQuery,
+            onSearchQueryChange = {query ->
+                if (query.isNotEmpty()) {
+                    viewModel.searchProducts(query)
+                } else {
+                    viewModel.clearSearch()
+                }
+            },
+            searchResults = searchResults,
+            isSearching = isSearching,
+            homeData = homeData,
+            stores = viewModel.stores.collectAsState().value,
+            onDismiss = {
+                showSearchResults = false
+                viewModel.clearSearch()
+            },
+            onStoreClick = { storeId ->
+                navController.navigate(Screen.ProductList.createRoute(storeId))
+                showSearchResults = false
+                viewModel.clearSearch()
+            },
+            onCategoryClick = {categoryId ->
+                navController.navigate(Screen.ProductList.createRoute(categoryId))
+                showSearchResults = false
+                viewModel.clearSearch()
+            },
+            onProductClick = { product ->
+                navController.navigate(Screen.ProductList.createRoute(product.store))
+                showSearchResults = false
+                viewModel.clearSearch()
+            },
+            onAddToCart = {product ->
+                cartViewModel.addToCart(product, 1)
+            }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+fun SearchResultsSheet(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    searchResults: List<Product>,
+    isSearching: Boolean,
+    homeData: HomeData?,
+    stores: List<Store>,
+    onDismiss: () -> Unit,
+    onStoreClick: (Int) -> Unit,
+    onCategoryClick: (Int) -> Unit,
+    onProductClick: (Product) -> Unit,
+    onAddToCart: (Product) -> Unit,
+    modifier : Modifier = Modifier
+){
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val queryLower = searchQuery.lowercase().trim()
+    val matchingStores = (homeData?.stores ?: stores).filter { store ->
+        store.name.lowercase().contains(queryLower) ||
+                store.description.lowercase().contains(queryLower)
+    }
+    val matchingCategories = homeData?.categories?.filter { category ->
+        category.name.lowercase().contains(queryLower)
+    } ?: emptyList()
+
+    val totalResults = searchResults.size + matchingStores.size + matchingCategories.size
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    modifier = Modifier.weight(1f),
+                    placeholder = {Text("Search products, stores, categories ....")},
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = "Search")
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()){
+                            IconButton(onClick = {onSearchQueryChange("")}) {
+                                Icon(Icons.Default.Close, contentDescription = "Clear")
+                            }
+                        } else if (isSearching) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    },
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            if (searchQuery.isNotEmpty()) {
+                                // Search is already triggered by onValueChange
+                            }
+                        }
+                    )
+
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            if (searchQuery.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Found $totalResults results",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+            } else {
+                Text(
+                    text = "Start typing to search...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            if (searchQuery.isNotEmpty()) {
+                when {
+                    isSearching -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                    totalResults == 0 -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(48.dp),
+                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = "No results found",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.height(400.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Products Section
+                            if (searchResults.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Products",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(vertical = 8.dp)
+                                    )
+                                }
+                                items(searchResults) { product ->
+                                    SearchResultItem(
+                                        product = product,
+                                        onClick = { onProductClick(product) },
+                                        onAddToCart = { onAddToCart(product) }
+                                    )
+                                }
+                            }
+
+                            // Stores Section
+                            if (matchingStores.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Stores",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(vertical = 8.dp)
+                                    )
+                                }
+                                items(matchingStores) { store ->
+                                    SearchStoreItem(
+                                        store = store,
+                                        onClick = { onStoreClick(store.id) }
+                                    )
+                                }
+                            }
+
+                            // Categories Section
+                            if (matchingCategories.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Categories",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(vertical = 8.dp)
+                                    )
+                                }
+                                items(matchingCategories) { category ->
+                                    SearchCategoryItem(
+                                        category = category,
+                                        onClick = { onCategoryClick(category.id) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SearchStoreItem(
+    store: Store,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            AsyncImage(
+                model = store.image ?: "",
+                contentDescription = store.name,
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = store.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = store.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    maxLines = 1
+                )
+            }
+            Icon(Icons.Default.ArrowForward, contentDescription = null)
+        }
+    }
+}
+
+@Composable
+fun SearchCategoryItem(
+    category: Category,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = category.name.first().toString().uppercase(),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Text(
+                text = category.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(Icons.Default.ArrowForward, contentDescription = null)
+        }
+    }
+}
+
+@Composable
+fun SearchResultItem(
+    product: Product,
+    onClick: () -> Unit,
+    onAddToCart: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Product Image
+            AsyncImage(
+                model = product.image,
+                contentDescription = product.name,
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+
+            // Product Info
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = product.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+                Text(
+                    text = product.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    maxLines = 1
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "₹${product.price}",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF4CAF50)
+                )
+            }
+
+            // Add to Cart Button
+            Button(
+                onClick = onAddToCart,
+                modifier = Modifier.height(36.dp)
+            ) {
+                Text("Add", fontSize = 12.sp)
+            }
+        }
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+@Suppress("DEPRECATION")
 fun StoreCard(
 store : Store,
 onClick: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val elevation by animateFloatAsState(
+        targetValue = if (isPressed) 2f else 8f,
+        animationSpec = tween(200),
+        label = "card_elevation"
+    )
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "card_scale"
+    )
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        modifier = Modifier.fillMaxWidth().graphicsLayer{
+            scaleX = scale
+            scaleY = scale
+        }
+            .clickable(
+                interactionSource = interactionSource,
+                onClick = onClick
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation =  elevation.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             AsyncImage(
@@ -345,213 +810,6 @@ onClick: () -> Unit
                     text = "⭐️ 4.5",
                     style = MaterialTheme.typography.bodySmall
                 )
-            }
-        }
-    }
-}
-
-@Composable
-fun BannerSection(banners: List<Banner>){
-    LazyRow(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp, horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        items(banners){banner ->
-            Card(
-                modifier = Modifier
-                    .width(300.dp)
-                    .height(150.dp)
-                    .clip(RoundedCornerShape(12.dp)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Image(
-                        painter = rememberAsyncImagePainter(banner.image),
-                        contentDescription = banner.title,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    // Overlay with orange/beige tint for first banner
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                if (banners.indexOf(banner) == 0) {
-                                    OrangeAccent.copy(alpha = 0.7f)
-                                } else {
-                                    Beige.copy(alpha = 0.5f)
-                                }
-                            )
-                            .padding(16.dp),
-                        contentAlignment = Alignment.BottomStart
-                    ) {
-                        Column {
-                            Text(
-                                text = banner.title,
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = banner.description,
-                                color = Color.White,
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun CategorySection(categories: List<Category>, navController: NavController){
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text(
-            text = "Shop by Category",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF212121),
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(categories){ category ->
-                Card(
-                    modifier = Modifier
-                        .width(100.dp)
-                        .clickable{
-                            navController.navigate(
-                                Screen.ProductList.createRoute(category.id)
-                            )
-                        },
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(50.dp)
-                                .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = category.name.first().toString().uppercase(),
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF757575)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = category.name,
-                            fontSize = 12.sp,
-                            color = Color(0xFF212121),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            maxLines = 2
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "View All",
-                            fontSize = 10.sp,
-                            color = Color(0xFF757575)
-                        )
-                    }
-                }
-
-            }
-        }
-    }
-}
-
-@Composable
-fun StoreSection(stores: List<Store>, navController: NavController) {
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text(
-            text = "Nearby Stores",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        stores.forEach { store ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp)
-                    .clickable {
-                        navController.navigate(Screen.ProductList.createRoute(store.id))
-                    },
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(modifier = Modifier.padding(16.dp)) {
-                    // Store Image Placeholder
-                    Box(
-                        modifier = Modifier
-                            .size(60.dp).clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFFF5F5F5)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (store.image?.isNotEmpty() == true){
-                            AsyncImage(
-                                model = store.image,
-                                contentDescription = store.name,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Text(
-                                text = store.name.first().toString(),
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF212121)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = store.name,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = store.description,
-                            fontSize = 14.sp,
-                            color = Color.Gray,
-                            maxLines = 2
-                        )
-                        Row(
-                            modifier = Modifier.padding(top = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "⭐ 4.5",
-                                fontSize = 12.sp,
-                                color = Color(0xFFFF9800)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "•",
-                                color = Color.Gray
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Free delivery",
-                                fontSize = 12.sp,
-                                color = Color(0xFF4CAF50)
-                            )
-                        }
-                    }
-                }
             }
         }
     }

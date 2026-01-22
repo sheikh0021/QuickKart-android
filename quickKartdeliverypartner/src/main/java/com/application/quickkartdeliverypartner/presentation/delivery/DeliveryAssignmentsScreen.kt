@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,8 +16,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Refresh
 import com.application.quickkartdeliverypartner.domain.model.DeliveryAssignment
-import androidx.compose.ui.platform.LocalContext
+import com.application.quickkartdeliverypartner.ui.navigation.DeliveryScreen
 import com.application.quickkartdeliverypartner.core.network.RetrofitClient
 import com.application.quickkartdeliverypartner.core.util.PreferencesManager
 import com.application.quickkartdeliverypartner.data.mapper.DeliveryMapper
@@ -26,7 +31,9 @@ import com.application.quickkartdeliverypartner.domain.usecase.DeliveryUseCase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DeliveryAssignmentsScreen() {
+fun DeliveryAssignmentsScreen(
+    navController: NavController? = null
+) {
     val context = LocalContext.current
     val viewModel = remember { DeliveryAssignmentsViewModel(context) }
     val assignments by viewModel.assignments.collectAsState()
@@ -50,7 +57,19 @@ fun DeliveryAssignmentsScreen() {
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary
-                )
+                ),
+                actions = {
+                    IconButton(
+                        onClick = { viewModel.loadAssignments() },
+                        enabled = !isLoading
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Refresh",
+                            tint = Color.White
+                        )
+                    }
+                }
             )
         }
     ) { padding ->
@@ -85,7 +104,8 @@ fun DeliveryAssignmentsScreen() {
                             assignment = assignment,
                             onStatusUpdate = { status ->
                                 viewModel.updateDeliveryStatus(assignment.id, status)
-                            }
+                            },
+                            navController = navController
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
@@ -119,7 +139,8 @@ fun DeliveryAssignmentsScreen() {
 @Composable
 fun DeliveryAssignmentCard(
     assignment: com.application.quickkartdeliverypartner.domain.model.DeliveryAssignment,
-    onStatusUpdate: (String) -> Unit
+    onStatusUpdate: (String) -> Unit,
+    navController: NavController? = null
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -160,7 +181,20 @@ fun DeliveryAssignmentCard(
             Text("Amount: ₹${assignment.totalAmount}",
                 style = MaterialTheme.typography.bodyMedium)
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = {
+                    navController?.navigate(DeliveryScreen.Chat.createRoute(assignment.orderId))
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Chat with customer")
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
             when {
                 assignment.pickedUpAt == null -> {
                     Button(
@@ -174,25 +208,54 @@ fun DeliveryAssignmentCard(
                     }
                 }
                 assignment.orderStatus == "picked_up" -> {
-                    Button(
-                        onClick = {onStatusUpdate("out_for_delivery")},
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFF9B023)
-                        )
-                    ) {
-                        Text("Out For Delivery")
+                    Column {
+                        Button(
+                            onClick = {onStatusUpdate("out_for_delivery")},
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFF9B023)
+                            )
+                        ) {
+                            Text("Out For Delivery")
+                        }
                     }
                 }
                 assignment.deliveredAt == null -> {
-                    Button(
-                        onClick = {onStatusUpdate("delivered")},
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF4CAF50)
-                        )
-                    ) {
-                        Text("Mark as Delivered")
+                    Column {
+                        // Update Location Button - Navigate to Map Screen
+                        if (assignment.orderStatus == "out_for_delivery" || assignment.pickedUpAt != null) {
+                            OutlinedButton(
+                                onClick = {
+                                    navController?.let { nav ->
+                                        // Store assignment in SavedStateHandle
+                                        nav.currentBackStackEntry?.savedStateHandle?.set(
+                                            "delivery_assignment",
+                                            assignment
+                                        )
+                                        // Navigate to map screen
+                                        nav.navigate(DeliveryScreen.TrackingMap.createRoute(assignment.orderId))
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Icon(Icons.Default.Map, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Update Location on Map")
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                        Button(
+                            onClick = {onStatusUpdate("delivered")},
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF4CAF50)
+                            )
+                        ) {
+                            Text("Mark as Delivered")
+                        }
                     }
                 }
                 else -> {

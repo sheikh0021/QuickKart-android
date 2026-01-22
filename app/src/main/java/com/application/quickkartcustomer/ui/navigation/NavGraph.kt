@@ -23,8 +23,11 @@ import com.application.quickkartcustomer.presentation.order.OrderListScreen
 import com.application.quickkartcustomer.presentation.product.ProductListScreen
 import com.application.quickkartcustomer.presentation.profile.ProfileScreen
 import androidx.compose.runtime.getValue
+import com.application.quickkartcustomer.presentation.address.MapAddressPickerScreen
 import com.application.quickkartcustomer.presentation.tracking.OrderTrackingMapScreen
 import com.application.quickkartcustomer.presentation.tracking.OrderTrackingScreen
+import com.application.quickkartcustomer.presentation.chat.ChatScreen
+import com.google.android.gms.maps.model.LatLng
 
 
 sealed class Screen(val route: String) {
@@ -53,6 +56,10 @@ sealed class Screen(val route: String) {
     }
     object OrderTracking : Screen("order_tracking")
     object Profile : Screen("profile")
+    object MapAddressPicker : Screen("map_address_picker")
+    object Chat : Screen("chat/{orderId}") {
+        fun createRoute(orderId: Int) = "chat/$orderId"
+    }
 }
 
 @Composable
@@ -148,7 +155,46 @@ fun NavGraph(navController: NavHostController){
             val orderId = backStackEntry.arguments?.getInt("orderId") ?: 0
             OrderTrackingMapScreen(
                 orderId = orderId,
+                onBackClick = {navController.navigateUp()},
+                navController = navController
+            )
+        }
+        composable(Screen.MapAddressPicker.route) {
+            MapAddressPickerScreen(
+                onLocationSelected = { latLng, street, city, state, zipcode ->
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("selected_location", latLng)
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("selected_street", street)
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("selected_city", city)
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("selected_state", state)
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("selected_zipcode", zipcode)
+
+                    navController.navigateUp()
+                },
                 onBackClick = {navController.navigateUp()}
+            )
+        }
+        composable(
+            route = Screen.Chat.route,
+            arguments = listOf(navArgument("orderId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getInt("orderId") ?: 0
+            val savedStateHandle = backStackEntry.savedStateHandle
+            savedStateHandle["orderId"] = orderId
+            ChatScreen(
+                orderId = orderId,
+                deliveryPartnerId = null,
+                deliveryPartnerName = null,
+                onBackClick = { navController.navigateUp() }
             )
         }
     }

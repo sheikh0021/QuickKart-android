@@ -3,6 +3,7 @@ package com.application.quickkartdeliverypartner.presentation.delivery
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -84,50 +85,29 @@ fun DeliveryTrackingScreen(
                         Text("Status: ${assignment.orderStatus}")
                     }
                 }
-
-                // Map placeholder (you'll need to implement actual map integration)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp)
-                        .padding(horizontal = 16.dp),
-                    contentAlignment = Alignment.Center
+                Button(
+                    onClick = {
+                        assignment?.let { assignment ->
+                            navController.currentBackStackEntry?.savedStateHandle?.set(
+                                "delivery_assignment",
+                                assignment
+                            )
+                            navController.navigate("delivery_tracking_map/${assignment.orderId}")
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Text(
-                        text = "Map Integration Needed\n(Latitude: Current Location)\nDelivery Address: ${assignment.deliveryAddress}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-
-                    // TODO: Implement Google Maps integration
-                    // GoogleMap(
-                    //     modifier = Modifier.fillMaxSize(),
-                    //     cameraPositionState = rememberCameraPositionState {
-                    //         position = CameraPosition.fromLatLngZoom(LatLng(lat, lng), 15f)
-                    //     }
-                    // ) {
-                    //     // Add markers, polylines, etc.
-                    // }
+                    Icon(Icons.Default.Map, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Open Map & Update Location")
                 }
-
-                // Action buttons
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    OutlinedButton(onClick = {
-                        // Update location (you'll need to get actual GPS coordinates)
-                        viewModel.updateLocation(orderId, 0.0, 0.0) // Placeholder coordinates
-                    }) {
-                        Text("Update Location")
-                    }
-
-                    OutlinedButton(onClick = {
+                OutlinedButton(
+                    onClick = {
                         navController.navigateUp()
-                    }) {
-                        Text("Back to Assignments")
-                    }
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text("Back to assignments")
                 }
             } ?: run {
                 Box(

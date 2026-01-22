@@ -1,7 +1,10 @@
 package com.application.quickkartcustomer.presentation.home
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,6 +26,9 @@ import androidx.navigation.NavController
 import com.application.quickkartcustomer.domain.model.Category
 import com.application.quickkartcustomer.ui.navigation.Screen
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 
 @Composable
@@ -37,109 +43,137 @@ fun InteractiveCategorySection(
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF212121),
-            modifier = Modifier.padding(bottom = 20.dp)
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(categories.size) { index ->
                 val category = categories[index]
-                InteractiveCategoryCard(
-                    category = category,
-                    onClick = {
-                        navController.navigate(Screen.ProductList.createRoute(category.id))
-                    }
-                )
-            }
-        }
-    }
-}
 
-@Composable
-fun InteractiveCategoryCard(
-    category: Category,
-    onClick: () -> Unit
-) {
-    var isPressed by remember { mutableStateOf(false) }
-
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f)
-    )
-
-    val elevation by animateFloatAsState(
-        targetValue = if (isPressed) 2f else 6f,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f)
-    )
-
-    Card(
-        modifier = Modifier
-            .width(110.dp)
-            .height(130.dp)
-            .scale(scale)
-            .shadow(
-                elevation = elevation.dp,
-                shape = RoundedCornerShape(16.dp),
-                spotColor = Color.Black.copy(alpha = 0.1f)
-            )
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // Enhanced icon container with gradient background
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFFF8F9FA),
-                                Color(0xFFE9ECEF)
-                            )
-                        ),
-                        shape = RoundedCornerShape(14.dp)
+                val delay = index * 100
+                val alpha by animateFloatAsState(
+                    targetValue = 1f,
+                    animationSpec = tween(
+                        durationMillis = 400,
+                        delayMillis = delay,
+                        easing = FastOutSlowInEasing
                     ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = category.name.first().toString().uppercase(),
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF495057)
+                    label = "category_alpha"
+                )
+                val offsetY by animateFloatAsState(
+                    targetValue = 0f,
+                    animationSpec = tween(
+                        durationMillis = 400,
+                        delayMillis = delay,
+                        easing = FastOutSlowInEasing
+                    ),
+                    label = "category_offset"
+                )
+                AnimatedCategoryCard(
+category = category,
+                    navController = navController,
+                    alpha = alpha,
+                    offsetY = offsetY
                 )
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Category name with better typography
-            Text(
-                text = category.name,
-                fontSize = 13.sp,
-                color = Color(0xFF212121),
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                lineHeight = 16.sp
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Subtle "View All" text
-            Text(
-                text = "View All",
-                fontSize = 11.sp,
-                color = Color(0xFF6C757D),
-                fontWeight = FontWeight.Medium
-            )
         }
     }
 }
+    @Composable
+    @Suppress("DEPRECATION")
+    fun AnimatedCategoryCard(
+        category: Category,
+        navController: NavController,
+        alpha: Float,
+        offsetY: Float
+    ){
+        val interactionSource = remember { MutableInteractionSource() }
+        val isPressed by interactionSource.collectIsPressedAsState()
+
+        val scale by animateFloatAsState(
+            targetValue = if (isPressed) 0.95f else 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMedium
+            ),
+            label = "category_scale"
+        )
+        Card(
+            modifier = Modifier.width(100.dp).graphicsLayer{
+                this.alpha = alpha
+                translationY = offsetY
+                scaleX = scale
+                scaleY = scale
+            }
+            .clickable(
+                interactionSource = interactionSource,
+                onClick = {
+                    navController.navigate(
+                        Screen.ProductList.createRoute(category.id)
+                    )
+                }
+            ),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = if (isPressed) 2.dp else 4.dp,
+                pressedElevation = 2.dp
+            ),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // Enhanced icon container with gradient background
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    Color(0xFFF8F9FA),
+                                    Color(0xFFE9ECEF)
+                                )
+                            ),
+                            shape = RoundedCornerShape(14.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = category.name.first().toString().uppercase(),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF495057)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Category name with better typography
+                Text(
+                    text = category.name,
+                    fontSize = 13.sp,
+                    color = Color(0xFF212121),
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    lineHeight = 16.sp
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Subtle "View All" text
+                Text(
+                    text = "View All",
+                    fontSize = 11.sp,
+                    color = Color(0xFF6C757D),
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
