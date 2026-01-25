@@ -137,7 +137,7 @@ class CheckoutViewModel @Inject constructor(
                 city = city,
                 state = state,
                 zipCode = zipCode,
-                isDefault = _addresses.value?.isEmpty() == true
+                isDefault = _addresses.value?.isEmpty() ?: true
             )
 
             orderUseCase.addAddress(newAddress).fold(
@@ -169,7 +169,7 @@ class CheckoutViewModel @Inject constructor(
                 zipCode = zipCode,
                 latitude = latitude,
                 longitude = longitude,
-                isDefault = _addresses.value?.isEmpty() == true
+                isDefault = _addresses.value?.isEmpty() ?: true
             )
             orderUseCase.addAddress(newAddress).fold(
                 onSuccess = {addedAddress ->

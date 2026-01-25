@@ -14,8 +14,9 @@ data class CartItem(
 }
 
 data class Cart(
-val items: List<CartItem> = emptyList()
+    val items: List<CartItem> = emptyList()
 ) {
+
     val totalItems: Int
         get() = items.sumOf { it.quantity }
 

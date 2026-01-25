@@ -31,7 +31,9 @@ import com.application.quickkartcustomer.domain.model.Order
 import com.application.quickkartcustomer.presentation.checkout.CheckoutViewModel
 import com.application.quickkartcustomer.ui.components.QuickKartButton
 import com.application.quickkartcustomer.ui.components.QuickKartTextField
+import com.application.quickkartcustomer.ui.navigation.NavigationStateManager
 import com.application.quickkartcustomer.ui.navigation.Screen
+import com.application.quickkartcustomer.ui.navigation.navigateWithAnimation
 import com.application.quickkartcustomer.ui.theme.DarkBlue
 import com.application.quickkartcustomer.ui.theme.LightGray
 import com.application.quickkartcustomer.ui.theme.TextGray
@@ -41,6 +43,7 @@ import com.google.android.gms.maps.model.LatLng
 @Composable
 fun CheckoutScreen(
     navController: NavController,
+    navigationStateManager: NavigationStateManager,
     viewModel: CheckoutViewModel = hiltViewModel()
 ) {
     val cart by viewModel.cart.collectAsState()
@@ -104,7 +107,7 @@ fun CheckoutScreen(
             orderNumber = placedOrder!!.orderNumber,
             onDismiss = {
                 showSuccessDialog = false
-                navController.navigate(Screen.OrderTracking.route) {
+                navController.navigateWithAnimation(Screen.OrderTracking.route, navigationStateManager) {
                     popUpTo(Screen.Cart.route) {inclusive = true}
                 }
                 placedOrder = null
@@ -230,13 +233,13 @@ fun CartSummarySection(cart: Cart) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = item.productName, fontSize = 14.sp, color = Color(0xFF212121))
                         Text(
-                            text = "${item.quantity} × ₹${item.price}",
+                            text = "${item.quantity} × ₹${String.format("%.2f", item.price)}",
                             fontSize = 12.sp,
                             color = TextGray
                         )
                     }
                     Text(
-                        text = "₹${item.totalPrice}",
+                        text = "₹${String.format("%.2f", item.totalPrice)}",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -259,7 +262,7 @@ fun CartSummarySection(cart: Cart) {
                     color = Color(0xFF212121)
                 )
                 Text(
-                    text = "₹${cart.totalPrice}",
+                    text = "₹${String.format("%.2f", cart.totalPrice)}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF212121)
@@ -297,7 +300,7 @@ fun DeliveryAddressSection(
                 }
             }
 
-            if (addresses.isEmpty()) {
+            if (addresses?.isEmpty() == true) {
                 Text(
                     text = "No addresses found. Please add a delivery address.",
                     color = TextGray,
@@ -427,7 +430,7 @@ fun CheckoutBottomBar(cart: Cart, onPlaceOrderClick: () -> Unit, isLoading: Bool
                     color = Color(0xFF212121)
                 )
                 Text(
-                    text = " ₹${cart.totalPrice}",
+                    text = "₹${String.format("%.2f", cart.totalPrice)}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF212121)

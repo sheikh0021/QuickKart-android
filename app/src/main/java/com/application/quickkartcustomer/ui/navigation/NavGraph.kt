@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import com.application.quickkartcustomer.ui.navigation.NavigationStateManager
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph
 import androidx.navigation.NavHostController
@@ -38,6 +39,9 @@ sealed class Screen(val route: String) {
     object Categories  : Screen("categories")
     object ProductList  : Screen("product_list/{storeId}") {
         fun createRoute(storeId: Int) = "product_list/$storeId"
+    }
+    object ProductListByCategory : Screen("product_list_category/{categoryId}") {
+        fun createRoute(categoryId: Int) = "product_list_category/$categoryId"
     }
     object ProductDetail : Screen("product_detail/{productId}"){
         fun createRoute(productId: Int) = "product_details/$productId"
@@ -84,16 +88,14 @@ fun getBottomNavRoute(route: String?): String {
 }
 
 @Composable
-fun NavGraph(navController: NavHostController){
+fun NavGraph(navController: NavHostController,
+             navigationStateManager: NavigationStateManager){
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
-    
-    // Check login state on app start and navigate accordingly
+
     LaunchedEffect(Unit) {
         if (preferencesManager.isLoggedIn()) {
-            // User is logged in, navigate to home screen
             navController.navigate(Screen.Home.route) {
-                // Clear back stack to prevent going back to login
                 popUpTo(Screen.Login.route) { inclusive = true }
             }
         }
@@ -104,22 +106,34 @@ fun NavGraph(navController: NavHostController){
         startDestination = Screen.Login.route
     ){
         composable(Screen.Login.route){
-            LoginScreen(navController)
+            LoginScreen(navController, navigationStateManager)
         }
         composable(Screen.Register.route) {
-            RegisterScreen(navController)
+            RegisterScreen(navController, navigationStateManager)
         }
         composable(Screen.Home.route){
-            HomeScreen(navController)
+            HomeScreen(
+                navController = navController,
+                navigationStateManager = navigationStateManager
+            )
         }
         composable(Screen.Categories.route) {
-            com.application.quickkartcustomer.presentation.categories.CategoriesScreen(navController)
+            com.application.quickkartcustomer.presentation.categories.CategoriesScreen(
+                navController = navController,
+                navigationStateManager = navigationStateManager
+            )
         }
         composable(Screen.Profile.route) {
-            ProfileScreen(navController)
+            ProfileScreen(
+                navController = navController,
+                navigationStateManager = navigationStateManager
+            )
         }
         composable(Screen.OrderTracking.route) {
-            OrderTrackingScreen(navController)
+            OrderTrackingScreen(
+                navController = navController,
+                navigationStateManager = navigationStateManager
+            )
         }
         composable(
             route = Screen.ProductList.route,
@@ -128,23 +142,39 @@ fun NavGraph(navController: NavHostController){
             )
         ) { backStackEntry ->
             val storeId = backStackEntry.arguments?.getInt("storeId") ?: 0
-            ProductListScreen(navController)
+            ProductListScreen(navController, navigationStateManager)
+        }
+        composable(
+            route = Screen.ProductListByCategory.route,
+            arguments = listOf(
+                navArgument("categoryId") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val categoryId = backStackEntry.arguments?.getInt("categoryId") ?: 0
+            ProductListScreen(navController, navigationStateManager)
         }
         composable(Screen.Cart.route) {
-            CartScreen(navController)
+            CartScreen(navController, navigationStateManager)
         }
         composable(Screen.Checkout.route) {
-            CheckoutScreen(navController)
+            CheckoutScreen(navController, navigationStateManager)
         }
         composable(Screen.OrderList.route) {
-            OrderListScreen(navController)
+            OrderListScreen(
+                navController = navController,
+                navigationStateManager = navigationStateManager
+            )
         }
         composable(
             route = Screen.OrderDetail.route,
             arguments = listOf(navArgument("orderId") { type = NavType.IntType })
         ) { backStackEntry ->
             val orderId = backStackEntry.arguments?.getInt("orderId") ?: 0
-            OrderDetailScreen(navController, orderId)
+            OrderDetailScreen(
+                navController = navController,
+                orderId = orderId,
+                navigationStateManager = navigationStateManager
+            )
         }
         composable(
             route = Screen.OrderTrackingMap.route,
@@ -156,7 +186,8 @@ fun NavGraph(navController: NavHostController){
             OrderTrackingMapScreen(
                 orderId = orderId,
                 onBackClick = {navController.navigateUp()},
-                navController = navController
+                navController = navController,
+                navigationStateManager = navigationStateManager
             )
         }
         composable(Screen.MapAddressPicker.route) {
@@ -180,7 +211,8 @@ fun NavGraph(navController: NavHostController){
 
                     navController.navigateUp()
                 },
-                onBackClick = {navController.navigateUp()}
+                onBackClick = {navController.navigateUp()},
+                navigationStateManager = navigationStateManager
             )
         }
         composable(
@@ -194,7 +226,8 @@ fun NavGraph(navController: NavHostController){
                 orderId = orderId,
                 deliveryPartnerId = null,
                 deliveryPartnerName = null,
-                onBackClick = { navController.navigateUp() }
+                onBackClick = { navController.navigateUp() },
+                navigationStateManager = navigationStateManager
             )
         }
     }

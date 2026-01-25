@@ -72,6 +72,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -91,6 +92,17 @@ import com.application.quickkartcustomer.ui.theme.BackgroundGradient
 import com.application.quickkartcustomer.ui.theme.DarkBlue
 import com.application.quickkartcustomer.ui.theme.OrangeAccent
 import com.application.quickkartcustomer.ui.theme.Beige
+import com.application.quickkartcustomer.ui.theme.PremiumOrange
+import com.application.quickkartcustomer.presentation.home.AnimatedProductCarousel
+import com.application.quickkartcustomer.presentation.home.SlidingBannerCards
+import com.application.quickkartcustomer.presentation.home.PromoCard
+import androidx.compose.animation.core.EaseInOutCubic
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import com.application.quickkartcustomer.domain.model.Cart
+import com.application.quickkartcustomer.ui.navigation.NavigationStateManager
+import com.application.quickkartcustomer.ui.navigation.navigateWithAnimation
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,6 +110,7 @@ import com.application.quickkartcustomer.ui.theme.Beige
 fun HomeScreen(
     navController: NavController,
     viewModel: HomeViewModel = hiltViewModel(),
+    navigationStateManager: NavigationStateManager,
     cartViewModel: CartViewModel = hiltViewModel()
 ) {
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -111,11 +124,11 @@ fun HomeScreen(
     val error by viewModel.error.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val cart by cartViewModel.cart.collectAsState()
-    val cartItemCount = cart.totalItems
+    val cartItemCount = cart?.totalItems ?: 0
 
     LaunchedEffect(Unit) {
         if (!preferencesManager.isLoggedIn()){
-            navController.navigate(Screen.Login.route){
+            navController.navigateWithAnimation(Screen.Login.route, navigationStateManager){
                 popUpTo(Screen.Home.route) {inclusive = true}
             }
         }
@@ -127,7 +140,7 @@ fun HomeScreen(
             // Clear stored authentication data
             preferencesManager.clearData()
             // Navigate to login screen and clear back stack
-            navController.navigate(Screen.Login.route) {
+            navController.navigateWithAnimation(Screen.Login.route, navigationStateManager) {
                 popUpTo(Screen.Home.route) { inclusive = true }
                 launchSingleTop = true
             }
@@ -158,23 +171,23 @@ fun HomeScreen(
                     when (route) {
                         Screen.Home.route -> {
                             if (currentRoute != Screen.Home.route) {
-                                navController.navigate(Screen.Home.route) {
+                                navController.navigateWithAnimation(Screen.Home.route, navigationStateManager) {
                                     popUpTo(Screen.Home.route) { inclusive = false }
                                 }
                             }
                         }
                         Screen.Categories.route -> {
-                            navController.navigate(Screen.Categories.route) {
+                            navController.navigateWithAnimation(Screen.Categories.route, navigationStateManager) {
                                 popUpTo(Screen.Home.route) { inclusive = false }
                             }
                         }
                         Screen.Profile.route -> {
-                            navController.navigate(Screen.Profile.route) {
+                            navController.navigateWithAnimation(Screen.Profile.route, navigationStateManager) {
                                 popUpTo(Screen.Home.route) { inclusive = false }
                             }
                         }
                         Screen.OrderTracking.route -> {
-                            navController.navigate(Screen.OrderTracking.route) {
+                            navController.navigateWithAnimation(Screen.OrderTracking.route, navigationStateManager) {
                                 popUpTo(Screen.Home.route) { inclusive = false }
                             }
                         }
@@ -217,9 +230,9 @@ fun HomeScreen(
                             Column(
                                 modifier = Modifier.background(Brush.verticalGradient(
                                     colors = listOf(
-                                        DarkBlue.copy(alpha = 0.95f),
-                                        DarkBlue.copy(alpha = 0.88f),
-                                        DarkBlue.copy(alpha = 0.82f)
+                                        DarkBlue.copy(alpha = 0.75f),  // Lighter: was 0.95f
+                                        DarkBlue.copy(alpha = 0.65f),  // Lighter: was 0.88f
+                                        DarkBlue.copy(alpha = 0.55f)   // Lighter: was 0.82f
                                     )
                                 ))
                             ) {
@@ -228,7 +241,7 @@ fun HomeScreen(
                                     deliveryAddress = deliveryAddress,
                                     deliveryItem = "Within 1 hour",
                                     cartItemCount = cartItemCount,
-                                    onCartClick = {navController.navigate(Screen.Cart.route)},
+                                    onCartClick = {navController.navigateWithAnimation(Screen.Cart.route, navigationStateManager)},
                                     onAddressClick = {},
                                     onTimeClick = {}
                                 )
@@ -256,41 +269,108 @@ fun HomeScreen(
                                 Spacer(modifier = Modifier.height(32.dp))
                             }
                         }
-                        if (homeData!!.banners.isNotEmpty()) {
-                            item {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                HeroBannerSection(banners = homeData!!.banners)
+                        homeData?.let { data ->
+                            val safeBanners = data.banners ?: emptyList()
+                            val safeProducts = data.products ?: emptyList()
+                            val safeCategories = data.categories ?: emptyList()
+                            val safeStores = data.stores ?: emptyList()
+                            
+                            if (safeBanners.isNotEmpty()) {
+                                item {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    HeroBannerSection(banners = safeBanners)
+                                }
                             }
-                        }
+                            // Add animated product carousel after categories
+                            if (safeProducts.isNotEmpty()) {
+                                item {
+                                    Spacer(modifier = Modifier.height(32.dp))
+                                    AnimatedProductCarousel(
+                                        products = safeProducts.take(8), // Show first 8 products
+                                        title = "Trending Now",
+                                        onProductClick = { product ->
+                                            navController.navigateWithAnimation(Screen.ProductList.createRoute(product.store), navigationStateManager)
+                                        }
+                                    )
+                                }
+                            }
+
+                        // Add sliding promotional banner cards
                         item {
-                            RecommendedProductsSection(
-                                products = emptyList(),
-                                onProductClick = {product ->
-                                    navController.navigate(Screen.ProductList.createRoute(product.store))
-                                },
-                                onAddToCart = {product ->
-                                    cartViewModel.addToCart(product, 1)
+                            Spacer(modifier = Modifier.height(32.dp))
+
+                            // Sample promotional cards - REPLACE with API data later
+                            val promoCards = listOf(
+                                PromoCard(
+                                    id = 1,
+                                    title = "Fresh & Fast",
+                                    subtitle = "Get groceries delivered in 30 mins",
+                                    imageUrl = "https://via.placeholder.com/100x100/4CAF50/FFFFFF?text=Fresh",
+                                    backgroundColor = Color(0xFF4CAF50),
+                                    actionText = "Order Now",
+                                    icon = "🚚"
+                                ),
+                                PromoCard(
+                                    id = 2,
+                                    title = "Special Deals",
+                                    subtitle = "Up to 50% off on daily essentials",
+                                    imageUrl = "https://via.placeholder.com/100x100/FF9800/FFFFFF?text=Deals",
+                                    backgroundColor = PremiumOrange,
+                                    actionText = "Shop Deals",
+                                    icon = "💰"
+                                ),
+                                PromoCard(
+                                    id = 3,
+                                    title = "Premium Stores",
+                                    subtitle = "Shop from verified premium partners",
+                                    imageUrl = "https://via.placeholder.com/100x100/2196F3/FFFFFF?text=Premium",
+                                    backgroundColor = Color(0xFF2196F3),
+                                    actionText = "Explore",
+                                    icon = "⭐"
+                                ),
+                                PromoCard(
+                                    id = 4,
+                                    title = "Express Delivery",
+                                    subtitle = "Same-day delivery available now",
+                                    imageUrl = "https://via.placeholder.com/100x100/FF5722/FFFFFF?text=Express",
+                                    backgroundColor = Color(0xFFFF5722),
+                                    actionText = "Get Fast",
+                                    icon = "⚡"
+                                )
+                            )
+
+                            SlidingBannerCards(
+                                promoCards = promoCards,
+                                onCardClick = { card ->
+                                    // Handle promo card navigation
+                                    when (card.id) {
+                                        1 -> navController.navigateWithAnimation(Screen.Categories.route, navigationStateManager)
+                                        2 -> navController.navigateWithAnimation(Screen.Categories.route, navigationStateManager)
+                                        3 -> navController.navigateWithAnimation(Screen.Home.route, navigationStateManager)
+                                        4 -> navController.navigateWithAnimation(Screen.Categories.route, navigationStateManager)
+                                    }
                                 }
                             )
-                        }
-                        //categories
-                        if (homeData!!.categories.isNotEmpty()){
-                            item {
-                                Spacer(modifier = Modifier.height(32.dp))
-                                InteractiveCategorySection(
-                                    categories = homeData!!.categories,
-                                    navController = navController
-                                )
                             }
-                        }
-                        //store section
-                        if (homeData!!.stores.isNotEmpty()){
-                            item {
-                                Spacer(modifier = Modifier.height(32.dp))
-                                PremiumStoreSection(
-                                    stores = homeData!!.stores,
-                                    navController = navController
-                                )
+                            //categories
+                            if (safeCategories.isNotEmpty()){
+                                item {
+                                    Spacer(modifier = Modifier.height(32.dp))
+                                    InteractiveCategorySection(
+                                        categories = safeCategories,
+                                        navController = navController
+                                    )
+                                }
+                            }
+                            //store section
+                            if (safeStores.isNotEmpty()){
+                                item {
+                                    Spacer(modifier = Modifier.height(32.dp))
+                                    PremiumStoreSection(
+                                        stores = safeStores,
+                                        navController = navController
+                                    )
+                                }
                             }
                         }
                     }
@@ -298,6 +378,7 @@ fun HomeScreen(
                 else -> {
                     // fall back to current basic store list implementations,
                     val stores by viewModel.stores.collectAsState()
+                    val safeStores = stores ?: emptyList()
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
@@ -305,14 +386,20 @@ fun HomeScreen(
                     ) {
                         item {
                             Column(
-                                modifier = Modifier.background(DarkBlue).fillMaxWidth()
+                                modifier = Modifier.background(Brush.verticalGradient(
+                                    colors = listOf(
+                                        DarkBlue.copy(alpha = 0.75f),  // Lighter gradient
+                                        DarkBlue.copy(alpha = 0.65f),
+                                        DarkBlue.copy(alpha = 0.55f)
+                                    )
+                                )).fillMaxWidth()
                             ) {
                                 EnhancedHomeHeader(
                                     userName = userName,
                                     deliveryAddress = deliveryAddress,
                                     deliveryItem = "Within 1 hour",
                                     cartItemCount = cartItemCount,
-                                    onCartClick = { navController.navigate(Screen.Cart.route) },
+                                    onCartClick = { navController.navigateWithAnimation(Screen.Cart.route, navigationStateManager) },
                                     onAddressClick = {},
                                     onTimeClick = {}
                                 )
@@ -320,10 +407,10 @@ fun HomeScreen(
                                     placeholder = "Search products or stores...",
                                     onClick = {
                                         stores.firstOrNull()?.let { store ->
-                                            navController.navigate(
+                                            navController.navigateWithAnimation(
                                                 Screen.ProductList.createRoute(
                                                     store.id
-                                                )
+                                                ), navigationStateManager
                                             )
                                         }
                                     }
@@ -337,10 +424,10 @@ fun HomeScreen(
                         )
                         }
 
-                        items(stores) { store ->
+                        items(safeStores) { store ->
                             StoreCard(
                                 store = store,
-                                onClick = {navController.navigate(Screen.ProductList.createRoute(store.id))
+                                onClick = {navController.navigateWithAnimation(Screen.ProductList.createRoute(store.id), navigationStateManager)
                                 }
                             )
 
@@ -360,26 +447,26 @@ fun HomeScreen(
                     viewModel.clearSearch()
                 }
             },
-            searchResults = searchResults,
+            searchResults = searchResults ?: emptyList(),
             isSearching = isSearching,
             homeData = homeData,
-            stores = viewModel.stores.collectAsState().value,
+            stores = viewModel.stores.collectAsState().value ?: emptyList(),
             onDismiss = {
                 showSearchResults = false
                 viewModel.clearSearch()
             },
             onStoreClick = { storeId ->
-                navController.navigate(Screen.ProductList.createRoute(storeId))
+                navController.navigateWithAnimation(Screen.ProductList.createRoute(storeId), navigationStateManager)
                 showSearchResults = false
                 viewModel.clearSearch()
             },
             onCategoryClick = {categoryId ->
-                navController.navigate(Screen.ProductList.createRoute(categoryId))
+                navController.navigateWithAnimation(Screen.ProductList.createRoute(categoryId), navigationStateManager)
                 showSearchResults = false
                 viewModel.clearSearch()
             },
             onProductClick = { product ->
-                navController.navigate(Screen.ProductList.createRoute(product.store))
+                navController.navigateWithAnimation(Screen.ProductList.createRoute(product.store), navigationStateManager)
                 showSearchResults = false
                 viewModel.clearSearch()
             },
@@ -408,13 +495,16 @@ fun SearchResultsSheet(
 ){
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val queryLower = searchQuery.lowercase().trim()
-    val matchingStores = (homeData?.stores ?: stores).filter { store ->
+    val safeViewModelStores = stores ?: emptyList()
+    val safeStoresList = (homeData?.stores ?: safeViewModelStores) ?: emptyList()
+    val matchingStores = safeStoresList.filter { store ->
         store.name.lowercase().contains(queryLower) ||
                 store.description.lowercase().contains(queryLower)
     }
-    val matchingCategories = homeData?.categories?.filter { category ->
+    val safeCategoriesList = homeData?.categories ?: emptyList()
+    val matchingCategories = safeCategoriesList.filter { category ->
         category.name.lowercase().contains(queryLower)
-    } ?: emptyList()
+    }
 
     val totalResults = searchResults.size + matchingStores.size + matchingCategories.size
 
@@ -718,7 +808,7 @@ fun SearchResultItem(
                     maxLines = 1
                 )
                 Text(
-                    text = product.description,
+                    text = product.description ?: "",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                     maxLines = 1

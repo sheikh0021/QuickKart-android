@@ -126,6 +126,7 @@ dependencies {
     kapt ("androidx.room:room-compiler:2.4.2")
 
     implementation ("androidx.compose.material:material-icons-extended")
+    implementation("com.airbnb.android:lottie-compose:6.7.1")
 
 
     // Work Manager

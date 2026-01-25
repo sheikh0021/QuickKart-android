@@ -38,13 +38,14 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.application.quickkartcustomer.domain.model.Order
 import com.application.quickkartcustomer.ui.navigation.Screen
-
+import com.application.quickkartcustomer.ui.navigation.NavigationStateManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderDetailScreen(
     navController: NavController,
     orderId: Int,
+    navigationStateManager: NavigationStateManager,
     viewModel: OrderViewModel = hiltViewModel()
 ){
     val order by viewModel.selectedOrder.collectAsStateWithLifecycle()

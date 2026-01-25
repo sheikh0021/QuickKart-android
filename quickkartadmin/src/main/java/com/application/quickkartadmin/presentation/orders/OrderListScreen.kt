@@ -137,7 +137,7 @@ fun OrderListScreen(
                 ) {
                     CircularProgressIndicator()
                 }
-            } else if (orders.isEmpty()) {
+            } else if (orders?.isEmpty() == true) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center

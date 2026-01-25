@@ -29,7 +29,7 @@ class CartRepositoryImpl : CartRepository {
                 productImage = product.image,
                 price = product.price,
                 quantity = quantity,
-                maxQuantity = minOf(10, product.stockQuantity)
+                maxQuantity = if (product.isAvailable) 10 else 0
             )
             cartItems.add(cartItem)
         }

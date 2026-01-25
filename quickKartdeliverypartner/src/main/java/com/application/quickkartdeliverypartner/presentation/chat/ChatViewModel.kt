@@ -74,7 +74,7 @@ class ChatViewModel @Inject constructor(
                     markMessagesAsRead(roomId)
                 },
                 onFailure = { e ->
-                    if (_messages.value.isEmpty()) {
+                    if (_messages.value?.isEmpty() == true) {
                         _error.value = e.message ?: "Failed to load messages"
                     }
                 }

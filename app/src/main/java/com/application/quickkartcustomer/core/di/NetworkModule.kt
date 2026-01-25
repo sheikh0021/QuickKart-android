@@ -86,10 +86,6 @@ object NetworkModule {
         return retrofit.create(ChatApi::class.java)
     }
 
-    @Provides
-    @Singleton
-    fun provideChatRepository(chatApi: ChatApi): ChatRepository {
-        return ChatRepositoryImpl(chatApi)
-    }
+    // REMOVED: ChatRepository is now provided in ViewModelModule to avoid duplicate bindings
 
 }

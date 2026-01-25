@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.application.quickkartcustomer.domain.model.ChatMessage
 import com.application.quickkartcustomer.ui.theme.*
+import com.application.quickkartcustomer.ui.navigation.NavigationStateManager
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -31,6 +32,7 @@ fun ChatScreen(
     deliveryPartnerId: Int? = null,
     deliveryPartnerName: String? = null,
     onBackClick: () -> Unit,
+    navigationStateManager: NavigationStateManager,
     viewModel: ChatViewModel = hiltViewModel()
 ) {
     val messages by viewModel.messages.collectAsState()
@@ -38,6 +40,8 @@ fun ChatScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val isSending by viewModel.isSending.collectAsState()
+
+    val safeMessages = messages ?: emptyList()
 
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -53,19 +57,20 @@ fun ChatScreen(
         topBar = {
             TopAppBar(
                 title = {
+                    val currentRoom = chatRoom // Avoid smart cast issues with delegated property
                     Column {
                         Text(
-                        text = chatRoom?.deliveryPartnerName ?: "Chat",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
-                    chatRoom?.let { room ->
-                        Text(
-                            text = "Order #${room.orderNumber}",
-                            fontSize = 12.sp,
-                            color = TextGray
+                            text = currentRoom?.deliveryPartnerName ?: "Chat",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
                         )
-                    }
+                        currentRoom?.let { room ->
+                            Text(
+                                text = "Order #${room.orderNumber}",
+                                fontSize = 12.sp,
+                                color = TextGray
+                            )
+                        }
                     }
                 },
                 navigationIcon = {
@@ -101,7 +106,7 @@ fun ChatScreen(
                 .padding(paddingValues)
         ) {
             when {
-                isLoading && messages.isEmpty() -> {
+                isLoading && safeMessages.isEmpty() -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
                         color = Primary

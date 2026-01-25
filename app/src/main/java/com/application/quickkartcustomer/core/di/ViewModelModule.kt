@@ -14,6 +14,7 @@ import com.application.quickkartcustomer.data.repository.AuthRepositoryImpl
 import com.application.quickkartcustomer.data.repository.OrderRepositoryImpl
 import com.application.quickkartcustomer.data.repository.ProductRepositoryImpl
 import com.application.quickkartcustomer.data.repository.ProfileRepositoryImpl
+import com.application.quickkartcustomer.data.repository.ChatRepositoryImpl
 import com.application.quickkartcustomer.data.repository.StoreRepositoryImpl
 import com.application.quickkartcustomer.domain.repository.AuthRepository
 import com.application.quickkartcustomer.domain.repository.CartRepository
@@ -22,6 +23,8 @@ import com.application.quickkartcustomer.domain.repository.ProductRepository
 import com.application.quickkartcustomer.domain.repository.ProfileRepository
 import com.application.quickkartcustomer.domain.repository.StoreRepository
 import com.application.quickkartcustomer.domain.repository.ChatRepository
+import com.application.quickkartcustomer.data.remote.api.ChatApi
+import com.google.firebase.firestore.FirebaseFirestore
 import com.application.quickkartcustomer.domain.usecase.AuthUseCase
 import com.application.quickkartcustomer.domain.usecase.CartUseCase
 import com.application.quickkartcustomer.domain.usecase.OrderUseCase
@@ -111,7 +114,12 @@ object ViewModelModule {
         ProfileUseCase(profileRepository)
 
     @Provides
-    fun provideChatUseCase(chatRepository: ChatRepository): ChatUseCase = 
+    fun provideChatRepository(
+        chatApi: ChatApi
+    ): ChatRepository = ChatRepositoryImpl(chatApi)
+
+    @Provides
+    fun provideChatUseCase(chatRepository: ChatRepository): ChatUseCase =
         ChatUseCase(chatRepository)
 
 }

@@ -19,7 +19,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
 import com.application.quickkartcustomer.core.util.PreferencesManager
+import com.application.quickkartcustomer.ui.components.LottieNavigationWrapper
 import com.application.quickkartcustomer.ui.navigation.NavGraph
+import com.application.quickkartcustomer.ui.navigation.NavigationStateManager
 import com.application.quickkartcustomer.ui.theme.QuickKartTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -60,7 +62,10 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun QuickKartApp(){
     val navController = rememberNavController()
-    NavGraph(navController)
+    val navigationStateManager = remember { NavigationStateManager() }
+    LottieNavigationWrapper(navigationStateManager = navigationStateManager) {
+        NavGraph(navController, navigationStateManager)
     }
+}
 
 

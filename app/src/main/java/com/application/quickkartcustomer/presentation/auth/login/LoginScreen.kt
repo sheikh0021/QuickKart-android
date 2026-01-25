@@ -43,7 +43,9 @@ import androidx.navigation.NavController
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.application.quickkartcustomer.ui.components.QuickKartButton
 import com.application.quickkartcustomer.ui.components.QuickKartTextField
+import com.application.quickkartcustomer.ui.navigation.NavigationStateManager
 import com.application.quickkartcustomer.ui.navigation.Screen
+import com.application.quickkartcustomer.ui.navigation.navigateWithAnimation
 import com.application.quickkartcustomer.ui.theme.DarkBlue
 import com.application.quickkartcustomer.ui.theme.LightGray
 import com.application.quickkartcustomer.ui.theme.Primary
@@ -51,7 +53,9 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun LoginScreen(navController: NavController, viewModel: LoginViewModel = hiltViewModel()) {
+fun LoginScreen(navController: NavController,
+                navigationStateManager: NavigationStateManager,
+                viewModel: LoginViewModel = hiltViewModel()) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -64,7 +68,7 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = hiltVi
         when (loginState) {
             is LoginState.Success -> {
                 // NAVIGATE TO HOME SCREEN
-                navController.navigate(Screen.Home.route) {
+                navController.navigateWithAnimation(Screen.Home.route, navigationStateManager) {
                     popUpTo(Screen.Login.route) { inclusive = true }
                 }
             }

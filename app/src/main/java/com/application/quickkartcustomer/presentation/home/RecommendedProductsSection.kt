@@ -99,7 +99,7 @@ fun RecommendedProductCard(
                     .background(Color(0xFFF5F5F5)),
                 contentAlignment = Alignment.Center
             ) {
-                if (product.image.isNotEmpty()) {
+                if (!product.image.isNullOrEmpty()) {
                     AsyncImage(
                         model = product.image,
                         contentDescription = product.name,
@@ -125,7 +125,7 @@ fun RecommendedProductCard(
             
             // Description/Organic label
             Text(
-                text = product.description.takeIf { it.isNotEmpty() } ?: "Organic",
+                text = product.description?.takeIf { it.isNotEmpty() } ?: "Organic",
                 fontSize = 11.sp,
                 color = Color(0xFF757575),
                 maxLines = 1,
@@ -141,7 +141,7 @@ fun RecommendedProductCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Unit $${String.format("%.2f", product.price)}",
+                    text = "Unit ₹${String.format("%.2f", product.price)}",
                     fontSize = 12.sp,
                     color = Color(0xFF757575),
                     fontWeight = FontWeight.Medium

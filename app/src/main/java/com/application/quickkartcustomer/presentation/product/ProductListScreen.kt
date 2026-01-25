@@ -32,12 +32,15 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.application.quickkartcustomer.domain.model.Product
 import com.application.quickkartcustomer.ui.components.QuickKartButton
+import com.application.quickkartcustomer.ui.navigation.NavigationStateManager
 import com.application.quickkartcustomer.ui.navigation.Screen
+import com.application.quickkartcustomer.ui.navigation.navigateWithAnimation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductListScreen(
     navController: NavController,
+    navigationStateManager: NavigationStateManager,
     viewModel: ProductListViewModel = hiltViewModel()
 ) {
     val products by viewModel.products.collectAsState()
@@ -70,7 +73,7 @@ fun ProductListScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { navController.navigate(Screen.Cart.route) }) {
+                    IconButton(onClick = { navController.navigateWithAnimation(Screen.Cart.route, navigationStateManager) }) {
                         Icon(Icons.Default.ShoppingCart, contentDescription = "Cart")
                     }
                 }
@@ -214,7 +217,7 @@ fun ProductItem(
                 )
 
                 Text(
-                    text = product.description,
+                    text = product.description ?: "",
                     fontSize = 14.sp,
                     color = Color.Gray,
                     maxLines = 2,
@@ -229,31 +232,42 @@ fun ProductItem(
                 )
 
                 Row(
-                    modifier = Modifier.padding(top = 8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (product.stockQuantity > 0) {
+                    if (product.isAvailable) {
                         Text(
-                            text = "In Stock (${product.stockQuantity})",
+                            text = "In Stock",
                             fontSize = 12.sp,
-                            color = Color(0xFF4CAF50)
+                            color = Color(0xFF4CAF50),
+                            modifier = Modifier.padding(end = 8.dp)
                         )
                     } else {
                         Text(
                             text = "Out of Stock",
                             fontSize = 12.sp,
-                            color = Color.Red
+                            color = Color.Red,
+                            modifier = Modifier.padding(end = 8.dp)
                         )
                     }
 
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    QuickKartButton(
-                        text = if (product.stockQuantity > 0) "Add to Cart" else "Out of Stock",
+                    Button(
                         onClick = onAddToCartClick,
-                        enabled = product.stockQuantity > 0,
-                        modifier = Modifier.height(36.dp)
-                    )
+                        enabled = product.isAvailable,
+                        modifier = Modifier.height(36.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF4CAF50),
+                            disabledContainerColor = Color.Gray
+                        )
+                    ) {
+                        Text(
+                            text = if (product.isAvailable) "Add to Cart" else "Out of Stock",
+                            fontSize = 12.sp
+                        )
+                    }
                 }
             }
         }

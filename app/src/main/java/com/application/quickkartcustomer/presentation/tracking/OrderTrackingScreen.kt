@@ -57,16 +57,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.application.quickkartcustomer.ui.navigation.NavigationStateManager
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderTrackingScreen(
     navController: NavController,
+    navigationStateManager: NavigationStateManager,
     viewModel: OrderViewModel = hiltViewModel()
 ){
     val orders by viewModel.orders.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+
+    val safeOrders = orders ?: emptyList()
 
     val navHostController = navController as NavHostController
     val navBackStackEntry by navHostController.currentBackStackEntryAsState()
@@ -93,8 +97,8 @@ fun OrderTrackingScreen(
 
         if (isFirstLoad) return@LaunchedEffect // First load hasn't completed yet
 
-        val activeOrders = orders.filter { it.status.lowercase() !in listOf("delivered", "cancelled") }
-        val allOrders = orders
+        val activeOrders = safeOrders.filter { it.status.lowercase() !in listOf("delivered", "cancelled") }
+        val allOrders = safeOrders
 
         println("OrderTrackingScreen: Order check - Total: ${allOrders.size}, Active: ${activeOrders.size}, isLoading: $isLoading")
 
@@ -200,7 +204,7 @@ fun OrderTrackingScreen(
             modifier = Modifier.fillMaxSize().padding(paddingValues).background(Color(0xFFF5F5F5))
         ){
             when {
-                isLoading && orders.isEmpty() -> {
+                isLoading && safeOrders.isEmpty() -> {
                     // Show loading when first loading and no cached orders
                     Column(
                         modifier = Modifier.fillMaxSize(),
@@ -226,7 +230,7 @@ fun OrderTrackingScreen(
                         }
                     }
                 }
-                orders.isEmpty() -> {
+                safeOrders.isEmpty() -> {
                     Column(
                         modifier = Modifier.fillMaxSize().padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -275,7 +279,7 @@ fun OrderTrackingScreen(
                             )
                         }
 
-                        if (orders.isEmpty()) {
+                        if (safeOrders.isEmpty()) {
                             item {
                                 Column(
                                     modifier = Modifier.fillMaxWidth(),

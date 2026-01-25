@@ -8,17 +8,15 @@ class ProductMapper {
     fun mapToDomain(dto: ProductDto): Product {
         return Product(
             id = dto.id,
-            store = dto.storeId,
-            category = dto.categoryId,
             name = dto.name,
             description = dto.description,
             price = dto.price,
             image = dto.image,
-            unit = dto.unit,
-            stockQuantity = dto.stockQuantity,
-            isAvailable = dto.isAvailable,
-            categoryName = dto.categoryName,
-            storeName = dto.storeName
+            store = dto.storeId,
+            storeName = dto.storeName,
+            category = dto.categoryId,
+            quantity = 1,
+            isAvailable = dto.isAvailable
         )
     }
 }

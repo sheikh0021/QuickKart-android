@@ -48,11 +48,13 @@ import com.application.quickkartcustomer.ui.theme.LightGray
 import com.application.quickkartcustomer.ui.theme.OnBackground
 import com.application.quickkartcustomer.ui.theme.Primary
 import com.application.quickkartcustomer.ui.theme.TextGray
+import com.application.quickkartcustomer.ui.navigation.NavigationStateManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     navController: NavController,
+    navigationStateManager: NavigationStateManager,
     viewModel: ProfileViewModel = hiltViewModel(),
     cartViewModel: CartViewModel = hiltViewModel()
 ) {

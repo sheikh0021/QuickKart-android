@@ -35,6 +35,7 @@ import com.application.quickkartcustomer.ui.theme.DarkBlue
 import com.application.quickkartcustomer.ui.theme.Surface
 import com.application.quickkartcustomer.ui.theme.Primary
 import com.application.quickkartcustomer.ui.navigation.Screen
+import com.application.quickkartcustomer.ui.navigation.NavigationStateManager
 import androidx.navigation.NavController
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.*
@@ -46,6 +47,7 @@ fun OrderTrackingMapScreen(
     orderId: Int,
     onBackClick: () -> Unit,
     navController: NavController? = null,
+    navigationStateManager: NavigationStateManager,
     viewModel: OrderTrackingViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current

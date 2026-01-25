@@ -168,7 +168,7 @@ fun AssignDeliveryScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    if (deliveryPartners.isEmpty()) {
+                    if (deliveryPartners?.isEmpty() == true) {
                         Box(
                             modifier = Modifier.fillMaxWidth().padding(32.dp),
                             contentAlignment = Alignment.Center

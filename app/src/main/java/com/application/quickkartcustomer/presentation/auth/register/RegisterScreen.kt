@@ -48,6 +48,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.application.quickkartcustomer.ui.components.QuickKartButton
 import com.application.quickkartcustomer.ui.components.QuickKartTextField
+import com.application.quickkartcustomer.ui.navigation.NavigationStateManager
 import com.application.quickkartcustomer.ui.navigation.Screen
 import com.application.quickkartcustomer.ui.theme.DarkBlue
 import com.application.quickkartcustomer.ui.theme.LightGray
@@ -58,6 +59,7 @@ import com.application.quickkartcustomer.ui.theme.Primary
 @Composable
 fun RegisterScreen(
     navController: NavController,
+    navigationStateManager: NavigationStateManager,
     viewModel: RegisterViewModel = hiltViewModel()
 ){
     var username by remember { mutableStateOf("") }

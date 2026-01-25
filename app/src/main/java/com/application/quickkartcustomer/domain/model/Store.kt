@@ -25,7 +25,8 @@ data class Banner(
 data class HomeData(
     val stores: List<Store>,
     val categories: List<Category>,
-    val banners: List<Banner>
+    val banners: List<Banner>,
+    val products: List<Product> = emptyList()
 
 )
 

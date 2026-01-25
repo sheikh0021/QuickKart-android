@@ -50,13 +50,14 @@ fun ChatScreen(
         topBar = {
             TopAppBar(
                 title = {
+                    val currentRoom = chatRoom // Avoid smart cast issues with delegated property
                     Column {
                         Text(
-                            text = chatRoom?.customerName ?: "Chat",
+                            text = currentRoom?.customerName ?: "Chat",
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp
                         )
-                        chatRoom?.let { room ->
+                        currentRoom?.let { room ->
                             Text(
                                 text = "Order #${room.orderNumber}",
                                 fontSize = 12.sp,
@@ -98,7 +99,7 @@ fun ChatScreen(
                 .padding(paddingValues)
         ) {
             when {
-                isLoading && messages.isEmpty() -> {
+                isLoading && (messages ?: emptyList()).isEmpty() -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
                         color = MaterialTheme.colorScheme.primary

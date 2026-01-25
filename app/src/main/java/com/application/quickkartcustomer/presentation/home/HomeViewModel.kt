@@ -38,6 +38,9 @@ class HomeViewModel @Inject constructor(
     private val _isSearching  = MutableStateFlow(false)
     val isSearching: StateFlow<Boolean> =_isSearching
 
+    private val _products = MutableStateFlow<List<Product>>(emptyList())
+    val products: StateFlow<List<Product>> = _products
+
     init {
         loadStores()
         loadHomeData()
@@ -65,6 +68,7 @@ class HomeViewModel @Inject constructor(
             storeUseCase.getHomeData().fold(
                 onSuccess = {data ->
                     _homeData.value = data
+                    _products.value = data.products
                     _isLoading.value = false
                 },
                 onFailure = {exception ->

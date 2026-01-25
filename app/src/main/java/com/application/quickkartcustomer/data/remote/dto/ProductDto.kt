@@ -1,10 +1,11 @@
 package com.application.quickkartcustomer.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
+import com.application.quickkartcustomer.domain.model.Product
 
 
 data class ProductDto(
-val id: Int,
+    val id: Int,
     @SerializedName("store") val storeId: Int,
     @SerializedName("category") val categoryId: Int,
     val name: String,
@@ -16,7 +17,22 @@ val id: Int,
     @SerializedName("is_available") val isAvailable: Boolean,
     @SerializedName("category_name") val categoryName: String,
     @SerializedName("store_name") val storeName: String
-)
+) {
+    fun toDomain(): Product {
+        return Product(
+            id = id,
+            name = name,
+            description = description,
+            price = price,
+            image = image,
+            store = storeId,
+            storeName = storeName,
+            category = categoryId,
+            quantity = 1,
+            isAvailable = isAvailable
+        )
+    }
+}
 
 data class ProductListResponseDto(
     @SerializedName("results") val products: List<ProductDto>,

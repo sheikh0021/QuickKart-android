@@ -86,7 +86,7 @@ fun DeliveryAssignmentsScreen(
                 ) {
                     CircularProgressIndicator()
                 }
-            } else if (assignments.isEmpty()) {
+            } else if (assignments?.isEmpty() == true) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center

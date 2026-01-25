@@ -20,11 +20,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.application.quickkartcustomer.domain.model.Order
 import com.application.quickkartcustomer.ui.navigation.Screen
+import com.application.quickkartcustomer.ui.navigation.NavigationStateManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderListScreen(
     navController: NavController,
+    navigationStateManager: NavigationStateManager,
     viewModel: OrderViewModel = hiltViewModel()
 ) {
     val orders by viewModel.orders.collectAsStateWithLifecycle()
@@ -50,7 +52,7 @@ fun OrderListScreen(
                 isLoading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
-                orders.isEmpty() -> {
+                (orders ?: emptyList()).isEmpty() -> {
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,

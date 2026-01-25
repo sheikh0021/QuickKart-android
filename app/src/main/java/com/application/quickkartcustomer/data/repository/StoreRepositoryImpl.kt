@@ -50,16 +50,20 @@ class StoreRepositoryImpl(
             val response = storeApi.getHomeData()
             if (response.isSuccessful) {
                 response.body()?.let { dto ->
-                    val stores = dto.stores.map { storeMapper.mapToDomain(it) }
-                    val categories = dto.categories.toCategoryList()
-                    val banners = dto.banners.map { Banner(it.id, it.image, it.title, it.description) }
+                    val stores = dto.stores?.map { storeMapper.mapToDomain(it) } ?: emptyList()
+                    val categories = dto.categories?.toCategoryList() ?: emptyList()
+                    val banners = dto.banners?.map { Banner(it.id, it.image, it.title, it.description) } ?: emptyList()
+                    val products = dto.products?.map { it.toDomain() } ?: emptyList()
 
-                    Result.success(HomeData(stores, categories, banners))
+                    val homeData = HomeData(stores, categories, banners, products)
+                    Result.success(homeData)
                 } ?: Result.failure(Exception("Empty response"))
             } else {
                 Result.failure(Exception("Failed to load home data: ${response.message()}"))
             }
         } catch (e: Exception) {
+            println("DEBUG: Exception in getHomeData: ${e.message}")
+            e.printStackTrace()
             Result.failure(e)
         }
     }

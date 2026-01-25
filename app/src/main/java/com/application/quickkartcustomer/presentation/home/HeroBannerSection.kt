@@ -30,14 +30,15 @@ import kotlinx.coroutines.delay
 @Composable
 fun HeroBannerSection(banners: List<Banner>) {
     val listState = rememberLazyListState()
+    val safeBanners = banners ?: emptyList()
     
     // Auto-scroll functionality
-    LaunchedEffect(banners.size) {
-        if (banners.isNotEmpty()) {
+    LaunchedEffect(safeBanners.size) {
+        if (safeBanners.isNotEmpty()) {
             while (true) {
                 delay(3000) // Auto-scroll every 3 seconds
                 val currentIndex = listState.firstVisibleItemIndex
-                val nextIndex = (currentIndex + 1) % banners.size
+                val nextIndex = (currentIndex + 1) % safeBanners.size
                 listState.animateScrollToItem(nextIndex)
             }
         }
@@ -49,8 +50,8 @@ fun HeroBannerSection(banners: List<Banner>) {
         horizontalArrangement = Arrangement.spacedBy(20.dp),
         contentPadding = PaddingValues(horizontal = 20.dp)
     ) {
-        items(banners.size) { index ->
-            val banner = banners[index]
+        items(safeBanners.size) { index ->
+            val banner = safeBanners[index]
             HeroBannerCard(banner = banner, index = index)
         }
     }

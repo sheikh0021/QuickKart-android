@@ -29,6 +29,8 @@ import com.application.quickkartcustomer.domain.model.CartItem
 import com.application.quickkartcustomer.ui.navigation.Screen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.application.quickkartcustomer.ui.navigation.NavigationStateManager
+import com.application.quickkartcustomer.ui.navigation.navigateWithAnimation
 import com.application.quickkartcustomer.ui.theme.DarkBlue
 import com.application.quickkartcustomer.ui.theme.LightGray
 import com.application.quickkartcustomer.ui.theme.TextGray
@@ -38,6 +40,7 @@ import com.application.quickkartcustomer.ui.theme.TextGray
 @Composable
 fun CartScreen(
     navController: NavController,
+    navigationStateManager: NavigationStateManager,
     viewModel: CartViewModel = hiltViewModel()
 ) {
     val cart = viewModel.cart.collectAsStateWithLifecycle()
@@ -45,11 +48,12 @@ fun CartScreen(
     val deliveryFee = 2.00
     Scaffold(
         bottomBar = {
-            if (cart.value.items.isNotEmpty()) {
+            if ((cart.value?.items ?: emptyList()).isNotEmpty()) {
                 CartBottomBar(
                     cart = cart.value,
                     deliveryFee = deliveryFee,
-                    navController = navController
+                    navController = navController,
+                    navigationStateManager = navigationStateManager
                 )
             }
         }
@@ -59,13 +63,13 @@ fun CartScreen(
                 isLoading.value -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
-                cart.value.items.isEmpty() -> {
+                cart.value?.items?.isEmpty() ?: true -> {
                     EmptyCartView()
                 }
                 else -> {
                     Column(modifier = Modifier.fillMaxSize()) {
                         CartHeader(
-                            itemCount = cart.value.totalItems,
+                            itemCount = cart.value?.totalItems ?: 0,
                             onBackClick = { navController.navigateUp() }
                         )
                         CartContent(
@@ -205,7 +209,7 @@ fun CartItemView(item: CartItem, viewModel: CartViewModel) {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "$${String.format("%.2f", item.price)}",
+                text = "₹${String.format("%.2f", item.price)}",
                 fontSize = 14.sp,
                 color = TextGray
             )
@@ -274,7 +278,8 @@ fun CartItemView(item: CartItem, viewModel: CartViewModel) {
 fun CartBottomBar(
     cart: Cart,
     deliveryFee: Double,
-    navController: NavController
+    navController: NavController,
+    navigationStateManager: NavigationStateManager
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -294,7 +299,7 @@ fun CartBottomBar(
                     color = TextGray
                 )
                 Text(
-                    text = "$${String.format("%.2f", cart.totalPrice)}",
+                    text = "₹${String.format("%.2f", cart.totalPrice)}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF212121)
@@ -311,7 +316,7 @@ fun CartBottomBar(
                     color = TextGray
                 )
                 Text(
-                    text = "$${String.format("%.2f", deliveryFee)}",
+                    text = "₹${String.format("%.2f", deliveryFee)}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF212121)
@@ -329,7 +334,7 @@ fun CartBottomBar(
                     color = Color(0xFF212121)
                 )
                 Text(
-                    text = "$${String.format("%.2f", cart.totalPrice + deliveryFee)}",
+                    text = "₹${String.format("%.2f", cart.totalPrice + deliveryFee)}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF212121)
@@ -337,7 +342,7 @@ fun CartBottomBar(
             }
             Spacer(modifier = Modifier.height(16.dp))
             Button(
-                onClick = { navController.navigate(Screen.Checkout.route) },
+                onClick = { navController.navigateWithAnimation(Screen.Checkout.route, navigationStateManager) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),

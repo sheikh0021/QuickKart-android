@@ -38,24 +38,33 @@ import com.application.quickkartcustomer.domain.model.Category
 import com.application.quickkartcustomer.domain.model.Product
 import com.application.quickkartcustomer.ui.components.QuickKartBottomNavigation
 import com.application.quickkartcustomer.ui.components.CartIconWithBadge
+import com.application.quickkartcustomer.ui.navigation.NavigationStateManager
 import com.application.quickkartcustomer.ui.navigation.Screen
 import com.application.quickkartcustomer.ui.navigation.getBottomNavRoute
+import com.application.quickkartcustomer.ui.navigation.navigateWithAnimation
 import com.application.quickkartcustomer.ui.theme.DarkBlue
 import com.application.quickkartcustomer.ui.theme.LightGray
 import com.application.quickkartcustomer.ui.theme.Primary
 import com.application.quickkartcustomer.ui.theme.TextGray
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.application.quickkartcustomer.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoriesScreen(
     navController: NavController,
     viewModel: CategoriesViewModel = hiltViewModel(),
+    navigationStateManager: NavigationStateManager,
     cartViewModel: com.application.quickkartcustomer.presentation.cart.CartViewModel = hiltViewModel()
 ) {
     val categories by viewModel.categories.collectAsState()
     val categoryProducts by viewModel.categoryProducts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+
+    val safeCategories = categories ?: emptyList()
 
     val cart by cartViewModel.cart.collectAsState()
     val cartItemCount = cart.totalItems
@@ -64,11 +73,11 @@ fun CategoriesScreen(
     var searchQuery by remember { mutableStateOf("") }
 
     // Filter categories based on search query
-    val filteredCategories = remember(categories, searchQuery) {
+    val filteredCategories = remember(safeCategories, searchQuery) {
         if (searchQuery.isBlank()) {
-            categories
+            safeCategories
         } else {
-            categories.filter { category ->
+            safeCategories.filter { category ->
                 category.name.contains(searchQuery, ignoreCase = true)
             }
         }
@@ -86,7 +95,7 @@ fun CategoriesScreen(
                 onItemClick = { route: String ->
                     when (route) {
                         Screen.Home.route -> {
-                            navController.navigate(Screen.Home.route) {
+                            navController.navigateWithAnimation(Screen.Home.route, navigationStateManager) {
                                 popUpTo(Screen.Home.route) { inclusive = false }
                             }
                         }
@@ -94,12 +103,12 @@ fun CategoriesScreen(
                             // Already on categories, do nothing
                         }
                         Screen.Profile.route -> {
-                            navController.navigate(Screen.Profile.route) {
+                            navController.navigateWithAnimation(Screen.Profile.route, navigationStateManager) {
                                 popUpTo(Screen.Home.route) { inclusive = false }
                             }
                         }
                         Screen.OrderTracking.route -> {
-                            navController.navigate(Screen.OrderTracking.route) {
+                            navController.navigateWithAnimation(Screen.OrderTracking.route, navigationStateManager) {
                                 popUpTo(Screen.Home.route) { inclusive = false }
                             }
                         }
@@ -122,13 +131,13 @@ fun CategoriesScreen(
                 .padding(paddingValues)
         ) {
             when {
-                isLoading && categories.isEmpty() -> {
+                isLoading && safeCategories.isEmpty() -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
                         color = Primary
                     )
                 }
-                error != null && categories.isEmpty() -> {
+                error != null && safeCategories.isEmpty() -> {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -180,7 +189,7 @@ fun CategoriesScreen(
                                 title = "Shop by Category",
                                 subtitle = "Find your favorite products",
                                 cartItemCount = cartItemCount,
-                                onCartClick = { navController.navigate(Screen.Cart.route) }
+                                onCartClick = { navController.navigateWithAnimation(Screen.Cart.route, navigationStateManager) }
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                         }
@@ -221,8 +230,13 @@ fun CategoriesScreen(
                                         CategoryGridCard(
                                             category = category,
                                             products = categoryProducts[category.id] ?: emptyList(),
+                                            navigationStateManager = navigationStateManager,
+                                            navController = navController,
                                             onCategoryClick = { categoryId ->
-                                                // TODO: Navigate to category detail or expand
+                                                navController.navigateWithAnimation(
+                                                    Screen.ProductListByCategory.createRoute(categoryId),
+                                                    navigationStateManager
+                                                )
                                             },
                                             onProductClick = { product ->
                                                 // TODO: Navigate to product detail
@@ -281,10 +295,28 @@ fun CategoriesScreen(
     }
 }
 
+// Function to get Lottie animation resource based on category name
+@Composable
+fun getCategoryLottieResource(categoryName: String): Int {
+    return when {
+        categoryName.contains("Fruits", ignoreCase = true) && 
+        categoryName.contains("Vegetables", ignoreCase = true) -> R.raw.thanks_giving_basket
+        categoryName.contains("Fruits", ignoreCase = true) && 
+        !categoryName.contains("Vegetables", ignoreCase = true) -> R.raw.thanks_giving_basket
+        categoryName.contains("Dairy", ignoreCase = true) && 
+        categoryName.contains("Eggs", ignoreCase = true) -> R.raw.cow_drink_milk
+        categoryName.contains("Snacks", ignoreCase = true) -> R.raw.chips_salsa
+        categoryName.contains("Beverages", ignoreCase = true) -> R.raw.food_toss
+        else -> R.raw.thanks_giving_basket // Default fallback
+    }
+}
+
 @Composable
 fun CategoryGridCard(
     category: Category,
     products: List<Product>,
+    navigationStateManager: NavigationStateManager,
+    navController: NavController,
     onCategoryClick: (Int) -> Unit,
     onProductClick: (Product) -> Unit,
     onAddToCart: (Product) -> Unit
@@ -292,7 +324,9 @@ fun CategoryGridCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onCategoryClick(category.id) },
+            .clickable { 
+                onCategoryClick(category.id)
+            },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
@@ -301,10 +335,10 @@ fun CategoryGridCard(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Category Image/Icon
+            // Category Lottie Animation
             Box(
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(100.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(
                         brush = Brush.linearGradient(
@@ -316,23 +350,14 @@ fun CategoryGridCard(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                if (category.image?.isNotEmpty() == true) {
-                    AsyncImage(
-                        model = category.image,
-                        contentDescription = category.name,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Text(
-                        text = category.name.firstOrNull()?.toString() ?: "?",
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Primary
-                    )
-                }
+                val lottieResource = getCategoryLottieResource(category.name)
+                val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(lottieResource))
+                
+                LottieAnimation(
+                    composition = composition,
+                    iterations = Int.MAX_VALUE,
+                    modifier = Modifier.size(80.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -376,7 +401,7 @@ fun CategoryGridCard(
                                 .clickable { onProductClick(product) },
                             contentAlignment = Alignment.Center
                         ) {
-                            if (product.image.isNotEmpty()) {
+                            if (!product.image.isNullOrEmpty()) {
                                 AsyncImage(
                                     model = product.image,
                                     contentDescription = product.name,

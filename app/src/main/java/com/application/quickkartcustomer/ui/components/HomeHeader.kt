@@ -50,8 +50,10 @@ fun EnhancedHomeHeader(
     onTimeClick: () -> Unit
 ){
     Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 20.dp),  // Added padding for better alignment
+        verticalArrangement = Arrangement.spacedBy(12.dp)  // Reduced spacing slightly
     ) {
         // Top row with greeting and cart
         Row(
@@ -59,7 +61,10 @@ fun EnhancedHomeHeader(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
                 Text(
                     text = "Hey, $userName 👋🏻",
                     fontSize = 28.sp,
@@ -67,11 +72,11 @@ fun EnhancedHomeHeader(
                     color = Color.White,
                     letterSpacing = 0.5.sp
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "Ready for your quick delivery ?",
-                    fontSize = 14.sp,
-                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 16.sp,  // Increased from 14.sp
+                    color = Color.White.copy(alpha = 0.9f),  // Slightly more visible
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -80,26 +85,6 @@ fun EnhancedHomeHeader(
                 itemCount = cartItemCount,
                 onClick = onCartClick
             )
-        }
-
-        // Location and time chips row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                LocationTimeChip(
-                    text = deliveryAddress.take(25) + if (deliveryAddress.length > 25) "..." else "",
-                    icon = Icons.Default.LocationOn,
-                    onClick = onAddressClick
-                )
-                LocationTimeChip(
-                    text = deliveryItem,
-                    icon = Icons.Default.Schedule,
-                    onClick = onTimeClick
-                )
-            }
         }
     }
 }
@@ -129,7 +114,7 @@ fun LocationTimeChip(
             )
             Text(
                 text = text,
-                fontSize = 12.sp,
+                fontSize = 13.sp,  // Increased from 12.sp
                 color = Color.White,
                 fontWeight = FontWeight.Medium
             )

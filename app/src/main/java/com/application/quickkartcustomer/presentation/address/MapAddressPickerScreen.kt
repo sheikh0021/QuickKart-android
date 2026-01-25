@@ -64,12 +64,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import com.application.quickkartcustomer.ui.navigation.NavigationStateManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapAddressPickerScreen(
     onLocationSelected: (LatLng, String, String, String, String) -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    navigationStateManager: NavigationStateManager
 ){
     val context = LocalContext.current
     val scope  = rememberCoroutineScope()
